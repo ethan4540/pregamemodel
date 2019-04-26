@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-# %matplotlib inline
+# need to add cross validation scores
 import numpy as np 
 from sklearn import svm
 from sklearn.svm import LinearSVC
@@ -16,6 +16,8 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 # import graphviz
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
 from sklearn import tree
 import warnings
 warnings.filterwarnings('ignore')
@@ -35,13 +37,19 @@ df3 = df3.drop_duplicates()
 
 
 
-
 df6 = pd.read_csv('2019reg.csv')
 df6 = df6.dropna()
 df6 = df6.drop_duplicates()
 
-
 df = pd.concat([df, df2, df3, df6])
+columns = df.columns
+list1 = columns[29:47]
+list2 = columns[75:93]
+list3 = list1.append(list2)
+
+print(list3)
+
+list4 = ['elo1_pre', 'elo2_pre', 'h_Home_Scorerol', 'h_Away_Scorerol', 'Home_Scorerol', 'Away_Scorerol']
 
 # df1 = pd.read_csv('reg2017fullML&elo.csv')
 # df2 = pd.read_csv('reg2018fullML&elo.csv')
@@ -58,7 +66,7 @@ def yo(odd):
 
 
 print(df.shape)
-feature_cols = ['elo1_pre', 'elo2_pre', 'h_Home_Scorerol', 'h_Away_Scorerol', 'Home_Scorerol', 'Away_Scorerol']
+feature_cols = list4
 x = df[feature_cols]
 y = df['winner']
 
@@ -68,16 +76,52 @@ y = df['winner']
 # print(x_test.shape)
 # print(y_train.shape)
 # print(y_test.shape)
-svc = SVM(random_state=2, probability=True).fit(x, y)
-clfgtb = GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0).fit(x, y)
-knn = KNeighborsClassifier(n_neighbors=100).fit(x, y)
+#use GridSearch Cv to hypertune the model 
+param_grid = {'n_estimators': np.arange(1, 50)}
+param_grid1 = {'learning_rate': np.arange(1, 10)/10}
+param_grid2 = {'max_depth': np.arange(1, 3)}
+param_grid3 = {'random_state': np.arange(0, 10)}
+param_dist = {'n_estimators': np.arange(1, 50),
+              'learning_rate': np.arange(1, 10)/10,
+              'max_depth': np.arange(1, 3),
+              'random_state': np.arange(0, 10)}
+
+param_distnn = {'hidden_layer_sizes': np.arange(1, 50),
+              
+              'alpha': np.arange(1, 10)/10,
+}
+param_grids = [param_grid, param_grid1, param_grid2, param_grid3]
+
+
+
+svc = LinearSVC(random_state=2).fit(x, y)
+
+#n_estimators = 50 learning_rate=1.0, max_depth=1, random_state=0
+clfgtb = GradientBoostingClassifier()
+clfgtb = RandomizedSearchCV(clfgtb, param_dist,  cv=35)
+
+
+
+
+cv_score = cross_val_score(clfgtb, x, y, cv = 10)
+clfgtb = clfgtb.fit(x, y)
+print(cv_score )
+
+print(clfgtb.best_params_)
+print(clfgtb.best_score_)
+print(type(clfgtb.best_score_))
+knn = KNeighborsClassifier(n_neighbors=25).fit(x, y)
 clf = RandomForestClassifier().fit(x, y)
-nn = MLPClassifier(hidden_layer_sizes=30, alpha=.6).fit(x, y)
+
+#nn = GridSearchCV(nn, param_grids, cv = 15)
 
 df2 = pd.read_csv('2018playoffs.csv')
-df3 = pd.read_csv('2017playoffs.csv')
-df4 = pd.read_csv('2016playoffs.csv')
-df2 = pd.concat([df2, df3])
+
+
+df7 = pd.read_csv('2017playoffs.csv')
+df8 = pd.read_csv('2016playoffs.csv')
+
+
 
 
 
@@ -85,7 +129,7 @@ df2 = pd.concat([df2, df3])
 # df10 = pd.read_csv('po2018fullML&elo.csv')
 # df2 = pd.concat([df8, df9, df10])
 
-new_feature_cols = ['elo1_pre', 'elo2_pre', 'h_Home_Scorerol', 'h_Away_Scorerol', 'Home_Scorerol', 'Away_Scorerol']
+new_feature_cols = list4
 x_new = df2[new_feature_cols]
 y_new = df2['winner']
 # x.head()
@@ -93,11 +137,11 @@ y_new = df2['winner']
 print(str(knn.score(x_new, y_new)) + 'knn percent on first playoffs')
 print(str(clfgtb.score(x_new, y_new)) + ' gdpercent on first playoffs')
 print(str(clf.score(x_new, y_new)) + 'clf percent on first playoffs')
-print(str(nn.score(x_new, y_new)) + 'nn percent on first playoffs')
 print(str(svc.score(x_new, y_new)) + 'svm percent on first playoffs')
 
-probssvc = svc.predict_proba(x_new)
-probssvc = probssvc.tolist()
+# probssvc = svc.predict_proba(x_new)
+# probssvc = probssvc.tolist()
+
 probsrf = clf.predict_proba(x_new)
 probsrf = probsrf.tolist()
 probsgd = clfgtb.predict_proba(x_new)
@@ -136,308 +180,467 @@ ntotal = 0
 print(len(probsgd))
 print(len(a_lines))
 print(len(h_lines))
+
+info_list = []
+abets = []
+hbets = []
+allbets = []
 for i in range(h):
-	if 1 > probsgd[i][1] * yo(h_lines[i]) - probsgd[i][0] > 0:
-		#print('bought')
-		n += 1
-		if winners[i] == 'H':
-			net += yo(h_lines[i])
-			#print(road_teams[i])
-			# print(check[i])
-			#print(dates[i])
-			#print(probsgd[i][1])
-			#print('above is probs for home')
-			#print(h_lines[i])
-			#print('above is home line which we took')
-			# print('WW')
-			home_gains += yo(h_lines[i])
-			gd_total += yo(h_lines[i])
-			print(net)
-		if winners[i] == 'A':
-			# print(gdprobs[i][1])
-			# print('above is probs for home')
-			# print(h_lines[i])
-			# print('above is home line which we took')
-			# print('LL')
-			
-			net -=1
-			gd_total += -1
-			print(net)
-		
-	if 1 > probssvc[i][1] * yo(h_lines[i]) - probssvc[i][0] > 0:
-		#print('bought')
-		n += 1
-		if winners[i] == 'H':
-			net += yo(h_lines[i])
-			#print(road_teams[i])
-			# print(check[i])
-			#print(dates[i])
-			#print(probsgd[i][1])
-			#print('above is probs for home')
-			#print(h_lines[i])
-			#print('above is home line which we took')
-			# print('WW')
-			home_gains += yo(h_lines[i])
-			svc_total += yo(h_lines[i])
-			print(net)
-		if winners[i] == 'A':
-			# print(gdprobs[i][1])
-			# print('above is probs for home')
-			# print(h_lines[i])
-			# print('above is home line which we took')
-			# print('LL')
-			
-			
-			net -=1
-			svc_total += -1
-			print(net)
-		
+
+	home_winprob = probsgd[i][1]
+	away_winprob = probsgd[i][0]
+	winner = winners[i]
+	h_line = h_lines[i]
+	a_line = a_lines[i]
+	evhome = home_winprob * yo(h_line) - away_winprob 
+	evaway = away_winprob * yo(a_line) - home_winprob
+
+	if  .1>evaway > 0:
+		bet_amt = 1
+
+	if .3>evaway > .1:
+		bet_amt = 1.5
+
+	if .5 >evaway > .3:
+		bet_amt = 2
+
+	if 1 > evaway > .5:
+		bet_amt = 2.5
+
+	if evaway > 1:
+		bet_amt = 3
+
+	if  .1> evhome > 0:
+		bet_amt = 1
+
+	if .3>evhome > .1:
+		bet_amt = 1.5
+
+	if .5 > evhome > .3:
+		bet_amt = 2
+
+	if 1 > evhome > .5:
+		bet_amt = 2.5
+
+	if evhome > 1:
+		bet_amt = 3
 
 
+	if winner == 'H':
+		roi_home = yo(h_line)
+		roi_away = -1
 
+	if winner == 'A':
+		roi_home = -1
+		roi_away = yo(a_line)
 
-	if 1 > probsknn[i][1] * yo(h_lines[i]) - probsknn[i][0] > 0:
-		#print('bought')
-		n += 1
-		if winners[i] == 'H':
-			net += yo(h_lines[i])
-			knn_total += yo(h_lines[i])
-			#print(road_teams[i])
-			# print(check[i])
-			#print(dates[i])
-			#print(probsgd[i][1])
-			#print('above is probs for home')
-			#print(h_lines[i])
-			#print('above is home line which we took')
-			# print('WW')
-			home_gains += yo(h_lines[i])
-			
-			print(net)
-		if winners[i] == 'A':
-			# print(gdprobs[i][1])
-			# print('above is probs for home')
-			# print(h_lines[i])
-			# print('above is home line which we took')
-			# print('LL')
-			home_losses += 1
-			knn_total -=1
-			
-			net -=1
-			print(net)
+	info = [home_winprob, h_line, evhome, roi_home, away_winprob, a_line, evaway, roi_away, winner]
 
-	if 1 > probsrf[i][1] * yo(h_lines[i]) - probsrf[i][0] > 0:
-		#print('bought')
-		n += 1
-		if winners[i] == 'H':
-			net += yo(h_lines[i])
-			#print(road_teams[i])
-			# print(check[i])
-			#print(dates[i])
-			#print(probsgd[i][1])
-			#print('above is probs for home')
-			#print(h_lines[i])
-			#print('above is home line which we took')
-			# print('WW')
+	if evaway > 0:
+		a_bets = [away_winprob, a_line, evaway, bet_amt * roi_away, winner]
+		abets.append(a_bets)
+		allbets.append(a_bets)
 
-			home_gains += yo(h_lines[i])
-			
-			print(net)
-		if winners[i] == 'A':
-			# print(gdprobs[i][1])
-			# print('above is probs for home')
-			# print(h_lines[i])
-			# print('above is home line which we took')
-			# print('LL')
-			home_losses += 1
-			
-			net -=1
-			print(net)
-
-
-
-	if  .3 >probsgd[i][0] * yo(a_lines[i]) - probsgd[i][1] > .1:
-		n+= 1
-		#print('bought')
-		if winners[i] == 'A':
-			net += yo(a_lines[i])
-			away_gains += yo(a_lines[i])
-			gd_total += yo(a_lines[i])
-			# print(probs[i][0])
-			# print('above is probs for away')
-			# print(h_lines[i])
-			# print('above is away line which we took')
-			# print('WW')
-
-			print(yo)
-			print(net)
-
-
-		if winners[i] == 'H':
-			away_losses += 1
-			
-			net -=1
-			gd_total += -1
-			# print(probs[i][0])
-			# print('above is probs for away')
-			# print(h_lines[i])
-			# print('above is away line which we took')
-			# print('LL')
-			print(net)
-
-	if  .3 >probsknn[i][0] * yo(a_lines[i]) - probsknn[i][1] > .1:
-		n+= 1
-		#print('bought')
-		if winners[i] == 'A':
-			net += yo(a_lines[i])
-			away_gains += yo(a_lines[i])
-			
-			# print(probs[i][0])
-			# print('above is probs for away')
-			# print(h_lines[i])
-			# print('above is away line which we took')
-			# print('WW')
-			knn_total += yo(a_lines[i])
-			print(yo)
-			print(net)
-
-
-		if winners[i] == 'H':
-			away_losses += 1
-			
-			net -=1
-			knn_total -= 1
-			# print(probs[i][0])
-			# print('above is probs for away')
-			# print(h_lines[i])
-			# print('above is away line which we took')
-			# print('LL')
-			print(net)
-
-	if  .3 >probsrf[i][0] * yo(a_lines[i]) - probsrf[i][1] > .1:
-		n+= 1
-		#print('bought')
-		if winners[i] == 'A':
-			net += yo(a_lines[i])
-			away_gains += yo(a_lines[i])
-			
-			# print(probs[i][0])
-			# print('above is probs for away')
-			# print(h_lines[i])
-			# print('above is away line which we took')
-			# print('WW')
-			print(yo)
-			print(net)
-
-
-		if winners[i] == 'H':
-			away_losses += 1
-			
-			net -=1
-			# print(probs[i][0])
-			# print('above is probs for away')
-			# print(h_lines[i])
-			# print('above is away line which we took')
-			# print('LL')
-			print(net)
+	if evhome > 0:
+		h_bets = [home_winprob, h_line, evhome, bet_amt * roi_home, winner]
+		hbets.append(h_bets)
+		allbets.append(h_bets)
+	info_list.append(info)
 	
 	
-print(net)
-print('above is net')
-print(home_gains - home_losses)
-print('above is home gains')
-print(away_gains - away_losses)
-print('above is away gains')
-print(gd_total)
-print('above is gd gains')
-print(knn_total)
-print('above is knn gains')
-print(svc_total)
-print('above is svc gains')
-print(n)
+all_df = pd.DataFrame(allbets, columns = ['winprob', 'line', 'ev', 'roi', 'winner'])
+home_df = pd.DataFrame(hbets, columns = ['home_winprob', 'h_line', 'evhome', 'roi_home', 'winner'])
+away_df = pd.DataFrame(abets, columns = ['away_winprob', 'a_line', 'evaway', 'roi_away', 'winner'])
 
-total += net
-ntotal += n
+home_roi = home_df['roi_home'].sum() 
+print(home_roi)
+home_ev = home_df['evhome'].sum()
+print('this is it boi')
+print(home_ev)
+print(home_df.head())
+print(away_df.head())
 
+away_roi = away_df['roi_away'].sum() 
+print(away_roi)
+away_ev = away_df['evaway'].sum()
+print('this is it boi')
+print(away_ev)
 
-g1 = [[1492, 1571, 110.4, 102.2, 118, 114.4]]
-g2 = [[1539, 1637, 120.3, 118, 108, 114.6]]
-g3 = [[1569, 1585, 109.7, 106.6, 110, 104.9]]
+total_roi = all_df['roi'].sum() 
+print(total_roi)
+total_ev = all_df['ev'].sum()
+print('this is it boi')
+print(total_ev)
+print(all_df.shape)
+#print(all_df)
+print(home_df)
+print(away_df)
+average = all_df['roi'].mean() 
+print(all_df['roi'])
+print(average)
+
+g1 = [[1643, 1533, 116.5, 119, 106.5, 118.5]]
+g2 = [[1630, 1570, 123.5, 114.5, 116, 117.3]]
+g3 = [[1525, 1500, 120, 105, 120, 115]]
+line1h = 430
+line1a =  -525
 
 
 pred1 = clfgtb.predict(g1)
 prob1 = clfgtb.predict_proba(g1)
-print(prob1)
-print(pred1)
-print('above is netsgd')
 
-pred2 = clfgtb.predict(g2)
-prob2 = clfgtb.predict_proba(g2)
+evhome = prob1[0][1] * yo(line1h) - prob1[0][0]
+evaway = prob1[0][0] * yo(line1a) - prob1[0][1]
+if  .1> evhome > 0:
+	bet_amt = 1
+	print('bet 1 on hometeam in game1')
+
+if .3>evhome > .1:
+	bet_amt = 1.5
+	print('bet 1.5 on hometeam in game1')
+if .5 > evhome > .3:
+	bet_amt = 2
+	print('bet 2 on hometeam in game1')
+
+if 1 > evhome > .5:
+	bet_amt = 2.5
+	print('bet 2.5 on hometeam in game1')
+
+if evhome > 1:
+	bet_amt = 3
+	print('bet 3 on hometeam in game1')
+
+if  .1> evaway > 0:
+	bet_amt = 1
+	print('bet 1 on awayteam in game1')
+
+if .3>evaway > .1:
+	bet_amt = 1.5
+	print('bet 1.5 on awayteam in game1')
+if .5 > evaway > .3:
+	bet_amt = 2
+	print('bet 2 on awayteam in game1')
+
+if 1 > evaway > .5:
+	bet_amt = 2.5
+	print('bet 2.5 on awayteam in game1')
+
+if evaway > 1:
+	bet_amt = 3
+	print('bet 3 on awayteam in game1')
+
+else:
+	print('skip this')
+
+
+print('above is cleticsgd')
+
+pred2 = clfgtb.predict(g1)
+prob2 = clfgtb.predict_proba(g1)
 print(prob2)
 print(pred2)
-print('above is warsgd')
+print('above is netsgd')
 
+pred3 = clfgtb.predict(g2)
+prob3 = clfgtb.predict_proba(g2)
+print(prob3)
+print(pred3)
+print('above is rocketsgd')
 pred3 = clfgtb.predict(g3)
 prob3 = clfgtb.predict_proba(g3)
 print(prob3)
 print(pred3)
-print('above is nugsgd')
+print('above is rocketsgd')
+
+
+
+# for i in range(h):
+# 	if 1 > probsgd[i][1] * yo(h_lines[i]) - probsgd[i][0] > 0:
+# 		#print('bought')
+# 		n += 1
+# 		if winners[i] == 'H':
+# 			net += yo(h_lines[i])
+# 			#print(road_teams[i])
+# 			# print(check[i])
+# 			#print(dates[i])
+# 			#print(probsgd[i][1])
+# 			#print('above is probs for home')
+# 			#print(h_lines[i])
+# 			#print('above is home line which we took')
+# 			# print('WW')
+# 			home_gains += yo(h_lines[i])
+# 			gd_total += yo(h_lines[i])
+# 			print(net)
+# 		if winners[i] == 'A':
+# 			# print(gdprobs[i][1])
+# 			# print('above is probs for home')
+# 			# print(h_lines[i])
+# 			# print('above is home line which we took')
+# 			# print('LL')
+# 			home_losses +=1
+			
+# 			net -=1
+# 			gd_total += -1
+# 			print(net)
+		
+# 	# if 1 > probssvc[i][1] * yo(h_lines[i]) - probssvc[i][0] > 0:
+# 	# 	#print('bought')
+# 	# 	n += 1
+# 	# 	if winners[i] == 'H':
+# 	# 		net += yo(h_lines[i])
+# 	# 		#print(road_teams[i])
+# 	# 		# print(check[i])
+# 	# 		#print(dates[i])
+# 	# 		#print(probsgd[i][1])
+# 	# 		#print('above is probs for home')
+# 	# 		#print(h_lines[i])
+# 	# 		#print('above is home line which we took')
+# 	# 		# print('WW')
+# 	# 		home_gains += yo(h_lines[i])
+# 	# 		svc_total += yo(h_lines[i])
+# 	# 		print(net)
+# 	# 	if winners[i] == 'A':
+# 	# 		# print(gdprobs[i][1])
+# 	# 		# print('above is probs for home')
+# 	# 		# print(h_lines[i])
+# 	# 		# print('above is home line which we took')
+# 	# 		# print('LL')
+			
+			
+# 	# 		net -=1
+# 	# 		svc_total += -1
+# 	# 		print(net)
+		
 
 
 
 
-pred1 = nn.predict(g1)
-prob1 = nn.predict_proba(g1)
-print(prob1)
-print(pred1)
-print('above is netsnn')
+# 	# if 1 > probsknn[i][1] * yo(h_lines[i]) - probsknn[i][0] > 0:
+# 	# 	#print('bought')
+# 	# 	n += 1
+# 	# 	if winners[i] == 'H':
+# 	# 		net += yo(h_lines[i])
+# 	# 		knn_total += yo(h_lines[i])
+# 	# 		#print(road_teams[i])
+# 	# 		# print(check[i])
+# 	# 		#print(dates[i])
+# 	# 		#print(probsgd[i][1])
+# 	# 		#print('above is probs for home')
+# 	# 		#print(h_lines[i])
+# 	# 		#print('above is home line which we took')
+# 	# 		# print('WW')
+# 	# 		home_gains += yo(h_lines[i])
+			
+# 	# 		print(net)
+# 	# 	if winners[i] == 'A':
+# 	# 		# print(gdprobs[i][1])
+# 	# 		# print('above is probs for home')
+# 	# 		# print(h_lines[i])
+# 	# 		# print('above is home line which we took')
+# 	# 		# print('LL')
+# 	# 		home_losses += 1
+# 	# 		knn_total -=1
+			
+# 	# 		net -=1
+# 	# 		print(net)
 
-pred2 = nn.predict(g2)
-prob2 = nn.predict_proba(g2)
-print(prob2)
-print(pred2)
-print('above is warsnn')
+# 	# if 1 > probsrf[i][1] * yo(h_lines[i]) - probsrf[i][0] > 0:
+# 	# 	#print('bought')
+# 	# 	n += 1
+# 	# 	if winners[i] == 'H':
+# 	# 		net += yo(h_lines[i])
+# 	# 		#print(road_teams[i])
+# 	# 		# print(check[i])
+# 	# 		#print(dates[i])
+# 	# 		#print(probsgd[i][1])
+# 	# 		#print('above is probs for home')
+# 	# 		#print(h_lines[i])
+# 	# 		#print('above is home line which we took')
+# 	# 		# print('WW')
 
-pred3 = nn.predict(g3)
-prob3 = nn.predict_proba(g3)
-print(prob3)
-print(pred3)
-print('above is nugsnn')
+# 	# 		home_gains += yo(h_lines[i])
+			
+# 	# 		print(net)
+# 	# 	if winners[i] == 'A':
+# 	# 		# print(gdprobs[i][1])
+# 	# 		# print('above is probs for home')
+# 	# 		# print(h_lines[i])
+# 	# 		# print('above is home line which we took')
+# 	# 		# print('LL')
+# 	# 		home_losses += 1
+			
+# 	# 		net -=1
+# 	# 		print(net)
 
-pred1 = knn.predict(g1)
-prob1 = knn.predict_proba(g1)
-print(prob1)
-print(pred1)
-print('above is netsknn')
 
-pred2 = knn.predict(g2)
-prob2 = knn.predict_proba(g2)
-print(prob2)
-print(pred2)
-print('above is warsknn')
 
-pred3 = knn.predict(g3)
-prob3 = knn.predict_proba(g3)
-print(prob3)
-print(pred3)
-print('above is nugsknn')
+# 	if  .3 >probsgd[i][0] * yo(a_lines[i]) - probsgd[i][1] > .1:
+# 		n+= 1
+# 		#print('bought')
+# 		if winners[i] == 'A':
+# 			net += yo(a_lines[i])
+# 			away_gains += yo(a_lines[i])
+# 			gd_total += yo(a_lines[i])
+# 			# print(probs[i][0])
+# 			# print('above is probs for away')
+# 			# print(h_lines[i])
+# 			# print('above is away line which we took')
+# 			# print('WW')
 
-pred1 = clf.predict(g1)
-prob1 = clf.predict_proba(g1)
-print(prob1)
-print(pred1)
-print('above is nets rf')
+# 			print(yo)
+# 			print(net)
 
-pred2 = clf.predict(g2)
-prob2 = clf.predict_proba(g2)
-print(prob2)
-print(pred2)
-print('above is wars rf')
 
-pred3 = clf.predict(g3)
-prob3 = clf.predict_proba(g3)
-print(prob3)
-print(pred3)
-print('above is nugs rf')
+# 		if winners[i] == 'H':
+# 			away_losses += 1
+			
+# 			net -=1
+# 			gd_total += -1
+# 			# print(probs[i][0])
+# 			# print('above is probs for away')
+# 			# print(h_lines[i])
+# 			# print('above is away line which we took')
+# 			# print('LL')
+# 			print(net)
+
+# 	# if  .3 >probsknn[i][0] * yo(a_lines[i]) - probsknn[i][1] > .1:
+# 	# 	n+= 1
+# 	# 	#print('bought')
+# 	# 	if winners[i] == 'A':
+# 	# 		net += yo(a_lines[i])
+# 	# 		away_gains += yo(a_lines[i])
+			
+# 	# 		# print(probs[i][0])
+# 	# 		# print('above is probs for away')
+# 	# 		# print(h_lines[i])
+# 	# 		# print('above is away line which we took')
+# 	# 		# print('WW')
+# 	# 		knn_total += yo(a_lines[i])
+# 	# 		print(yo)
+# 	# 		print(net)
+
+
+# 	# 	if winners[i] == 'H':
+# 	# 		away_losses += 1
+			
+# 	# 		net -=1
+# 	# 		knn_total -= 1
+# 	# 		# print(probs[i][0])
+# 	# 		# print('above is probs for away')
+# 	# 		# print(h_lines[i])
+# 	# 		# print('above is away line which we took')
+# 	# 		# print('LL')
+# 	# 		print(net)
+
+# 	# if  .3 >probsrf[i][0] * yo(a_lines[i]) - probsrf[i][1] > .1:
+# 	# 	n+= 1
+# 	# 	#print('bought')
+# 	# 	if winners[i] == 'A':
+# 	# 		net += yo(a_lines[i])
+# 	# 		away_gains += yo(a_lines[i])
+			
+# 	# 		# print(probs[i][0])
+# 	# 		# print('above is probs for away')
+# 	# 		# print(h_lines[i])
+# 	# 		# print('above is away line which we took')
+# 	# 		# print('WW')
+# 	# 		print(yo)
+# 	# 		print(net)
+
+
+# 	# 	if winners[i] == 'H':
+# 	# 		away_losses += 1
+			
+# 	# 		net -=1
+# 	# 		# print(probs[i][0])
+# 	# 		# print('above is probs for away')
+# 	# 		# print(h_lines[i])
+# 	# 		# print('above is away line which we took')
+# 	# 		# print('LL')
+# 	# 		print(net)
+	
+	
+# print(net)
+# print('above is net')
+# print(home_gains - home_losses)
+# print('above is home gains')
+# print(away_gains - away_losses)
+# print('above is away gains')
+# print(gd_total)
+# print('above is gd gains')
+# print(knn_total)
+# print('above is knn gains')
+# print(svc_total)
+# print('above is svc gains')
+# print(n)
+
+# total += net
+# ntotal += n
+
+
+# g1 = [[1538, 1591, 107.9, 106.9, 112, 113]]
+# g2 = [[1577, 1622, 108.6, 106.9, 108, 112]]
+# g3 = [[1525, 1637, 120, 105, 107, 115]]
+
+
+# pred1 = clfgtb.predict(g1)
+# prob1 = clfgtb.predict_proba(g1)
+# print(prob1)
+# print(pred1)
+# print('above is cleticsgd')
+
+# pred2 = clfgtb.predict(g2)
+# prob2 = clfgtb.predict_proba(g2)
+# print(prob2)
+# print(pred2)
+# print('above is netsgd')
+
+# pred3 = clfgtb.predict(g3)
+# prob3 = clfgtb.predict_proba(g3)
+# print(prob3)
+# print(pred3)
+# print('above is rocketsgd')
+
+
+
+
+
+
+# pred1 = knn.predict(g1)
+# prob1 = knn.predict_proba(g1)
+# print(prob1)
+# print(pred1)
+# print('above is netsknn')
+
+# pred2 = knn.predict(g2)
+# prob2 = knn.predict_proba(g2)
+# print(prob2)
+# print(pred2)
+# print('above is warsknn')
+
+# pred3 = knn.predict(g3)
+# prob3 = knn.predict_proba(g3)
+# print(prob3)
+# print(pred3)
+# print('above is nugsknn')
+
+# pred1 = clf.predict(g1)
+# prob1 = clf.predict_proba(g1)
+# print(prob1)
+# print(pred1)
+# print('above is nets rf')
+
+# pred2 = clf.predict(g2)
+# prob2 = clf.predict_proba(g2)
+# print(prob2)
+# print(pred2)
+# print('above is wars rf')
+
+# pred3 = clf.predict(g3)
+# prob3 = clf.predict_proba(g3)
+# print(prob3)
+# print(pred3)
+# print('above is nugs rf')
 
 
 
