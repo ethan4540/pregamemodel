@@ -41,7 +41,10 @@ df6 = pd.read_csv('2019reg.csv')
 df6 = df6.dropna()
 df6 = df6.drop_duplicates()
 
-df = pd.concat([df, df2, df3, df6])
+df7 = pd.read_csv('2017playoffs.csv')
+df8 = pd.read_csv('2016playoffs.csv')
+
+df = pd.concat([df, df2, df3, df6, df7, df8])
 columns = df.columns
 list1 = columns[29:47]
 list2 = columns[75:93]
@@ -49,7 +52,7 @@ list3 = list1.append(list2)
 
 print(list3)
 
-list4 = ['elo1_pre', 'elo2_pre', 'h_Home_Scorerol', 'h_Away_Scorerol', 'Home_Scorerol', 'Away_Scorerol']
+list4 = ['elo1_pre', 'elo2_pre', 'h_Home_Scorerol', 'h_Away_Scorerol', 'Away_Scorerol', 'Home_Scorerol']
 
 # df1 = pd.read_csv('reg2017fullML&elo.csv')
 # df2 = pd.read_csv('reg2018fullML&elo.csv')
@@ -85,6 +88,8 @@ param_dist = {'n_estimators': np.arange(1, 50),
               'learning_rate': np.arange(1, 10)/10,
               'max_depth': np.arange(1, 3),
               'random_state': np.arange(0, 10)}
+param_neighbors = {'n_neighbors': np.arange(3, 40)}
+
 
 param_distnn = {'hidden_layer_sizes': np.arange(1, 50),
               
@@ -97,8 +102,8 @@ param_grids = [param_grid, param_grid1, param_grid2, param_grid3]
 svc = LinearSVC(random_state=2).fit(x, y)
 
 #n_estimators = 50 learning_rate=1.0, max_depth=1, random_state=0
-clfgtb = GradientBoostingClassifier()
-clfgtb = RandomizedSearchCV(clfgtb, param_dist,  cv=35)
+clfgtb = GradientBoostingClassifier(random_state = 0, n_estimators = 43, max_depth = 1, learning_rate = 1)
+#clfgtb = RandomizedSearchCV(clfgtb, param_dist,  cv=100)
 
 
 
@@ -107,10 +112,10 @@ cv_score = cross_val_score(clfgtb, x, y, cv = 10)
 clfgtb = clfgtb.fit(x, y)
 print(cv_score )
 
-print(clfgtb.best_params_)
-print(clfgtb.best_score_)
-print(type(clfgtb.best_score_))
-knn = KNeighborsClassifier(n_neighbors=25).fit(x, y)
+
+knn = KNeighborsClassifier(n_neighbors = 35).fit(x, y)
+
+
 clf = RandomForestClassifier().fit(x, y)
 
 #nn = GridSearchCV(nn, param_grids, cv = 15)
@@ -118,8 +123,7 @@ clf = RandomForestClassifier().fit(x, y)
 df2 = pd.read_csv('2018playoffs.csv')
 
 
-df7 = pd.read_csv('2017playoffs.csv')
-df8 = pd.read_csv('2016playoffs.csv')
+
 
 
 
@@ -278,16 +282,18 @@ print(away_df)
 average = all_df['roi'].mean() 
 print(all_df['roi'])
 print(average)
-
-g1 = [[1643, 1533, 116.5, 119, 106.5, 118.5]]
-g2 = [[1630, 1570, 123.5, 114.5, 116, 117.3]]
+#g1 = [[1595, 1662, 120.37, 108.62, 110.9, 106.3]]
+#g2 = [[1651, 1673, 121.9, 108.6, 112.6, 106.225]]
+g1 = [[1609, 1627, 107.5, 98.1, 110.76, 109.75]]
+g2 = [[1647, 1609, 115.7, 109.5, 110.4, .2]]
 g3 = [[1525, 1500, 120, 105, 120, 115]]
-line1h = 430
-line1a =  -525
+line1h = -180
+line1a = 150
 
 
 pred1 = clfgtb.predict(g1)
 prob1 = clfgtb.predict_proba(g1)
+print(prob1)
 
 evhome = prob1[0][1] * yo(line1h) - prob1[0][0]
 evaway = prob1[0][0] * yo(line1a) - prob1[0][1]
@@ -333,19 +339,20 @@ else:
 	print('skip this')
 
 
-print('above is cleticsgd')
 
-pred2 = clfgtb.predict(g1)
-prob2 = clfgtb.predict_proba(g1)
+pred1 = clfgtb.predict(g1)
+prob1 = clfgtb.predict_proba(g1)
+print(prob1)
+print(pred1)
+print('above is blazersgd')
+
+pred2 = clfgtb.predict(g2)
+prob2 = clfgtb.predict_proba(g2)
 print(prob2)
 print(pred2)
-print('above is netsgd')
-
-pred3 = clfgtb.predict(g2)
-prob3 = clfgtb.predict_proba(g2)
-print(prob3)
-print(pred3)
 print('above is rocketsgd')
+
+
 pred3 = clfgtb.predict(g3)
 prob3 = clfgtb.predict_proba(g3)
 print(prob3)
