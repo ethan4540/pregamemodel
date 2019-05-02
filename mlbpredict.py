@@ -54,11 +54,31 @@ df7 = df7.drop_duplicates()
 
 df = pd.concat([df, df3, df6, df7, df5, df4])
 
-list1 = ['Open']
-
+list1 = ['Past_10_v', 'Past_10_h', 'rating1_pre', 'rating2_pre']
+#Past_10_v	Past_10_h rating1_pre	rating2_pre
 # , 'Past_10_h', 'Past_10_v' , 'rating2_pre'
 
+train_years = ['2011', '2013', '2014', '2015', '2016', '2017']
+test_years = ['2018']
+sport = 'mlb'
+train_fns = ['./data/' + year + sport + '.csv' for year in train_years]
+test_fns = ['./data/' + year + sport + '.csv' for year in test_years]
+def clean(fn):
+    df = pd.read_csv(fn)
+    df = df.dropna()
+    df = df.drop_duplicates()
+    return df  
+def dfs(fns):
+    dfs = []
+    for fn in fns:
+        tmp_df = clean(fn)
+        dfs.append(tmp_df)
+    df = pd.concat(dfs)
+    return df 
 
+
+train_df = dfs(train_fns)
+test_df = dfs(test_fns)
 def yo(odd):
     # to find the adjusted odds multiplier 
     # returns float
@@ -70,8 +90,8 @@ def yo(odd):
         return abs(100/odd)
 
 feature_cols = list1
-x = df[feature_cols]
-y = df['h_win']
+x = train_df[feature_cols]
+y = train_df['h_win']
 
 clfgtb = GradientBoostingClassifier(random_state = 0, n_estimators = 43, max_depth = 1, learning_rate = 1).fit(x, y)
 
