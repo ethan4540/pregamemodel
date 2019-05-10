@@ -1,26 +1,16 @@
-# import tensorflow as tf
-# import numpy as np
-
-# c = np.array([[3.,4], [5.,6], [6.,7]])
-# step = tf.reduce_mean(c, 1)                                                                                 
-# with tf.Session() as sess:
-#     print(sess.run(step))
-
-
-
-
 import tensorflow as tf
 import numpy as np
 from tensorflow import keras
 import pandas as pd
 
 list1 = ['Past_10_h', 'Past_10_v']
-'Past_10_h', 'Past_10_v', 'h_ML', 'rating1_pre', 'rating2_pre'
+# features = ['Past_10_h', 'Past_10_v', 'h_ML', 'rating1_pre', 'rating2_pre']
 train_years = ['2011', '2013', '2014', '2015', '2016', '2017']
 test_years = ['2018']
 sport = 'mlb'
 train_fns = ['./data/' + year + sport + '.csv' for year in train_years]
 test_fns = ['./data/' + year + sport + '.csv' for year in test_years]
+
 def clean(fn):
     df = pd.read_csv(fn)
     df = df.dropna()

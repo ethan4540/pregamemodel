@@ -19,30 +19,33 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
 from sklearn import tree
+from sklearn.metrics import brier_score_loss
 import warnings
+from sklearn.calibration import CalibratedClassifierCV
 warnings.filterwarnings('ignore')
 import pickle
 
-df = pd.read_csv('2016reg.csv')
+
+df = pd.read_csv('./data/2016reg.csv')
 df = df.dropna()
 df = df.drop_duplicates()
 print(type(df))
-df2 = pd.read_csv('2017reg.csv')
+df2 = pd.read_csv('./data/2017reg.csv')
 df2 = df2.dropna()
 df2 = df.drop_duplicates()
 
-df3 = pd.read_csv('2018reg.csv')
+df3 = pd.read_csv('./data/2018reg.csv')
 df3 = df3.dropna()
 df3 = df3.drop_duplicates()
 
 
 
-df6 = pd.read_csv('2019reg.csv')
+df6 = pd.read_csv('./data/2019reg.csv')
 df6 = df6.dropna()
 df6 = df6.drop_duplicates()
 
-df7 = pd.read_csv('2017playoffs.csv')
-df8 = pd.read_csv('2016playoffs.csv')
+df7 = pd.read_csv('./data/2017playoffs.csv')
+df8 = pd.read_csv('./data/2016playoffs.csv')
 
 df = pd.concat([df, df2, df3, df6, df7, df8])
 columns = df.columns
@@ -120,9 +123,10 @@ clf = RandomForestClassifier().fit(x, y)
 
 #nn = GridSearchCV(nn, param_grids, cv = 15)
 
-df2 = pd.read_csv('2018playoffs.csv')
+df2 = pd.read_csv('./data/2018playoffs.csv')
 
-
+df2 = df2.dropna()
+df2 = df2.drop_duplicates()
 
 
 
@@ -137,12 +141,24 @@ new_feature_cols = list4
 x_new = df2[new_feature_cols]
 y_new = df2['winner']
 # x.head()
+print(x_new)
+print(y_new)
 
-print(str(knn.score(x_new, y_new)) + 'knn percent on first playoffs')
+#print(str(knn.score(x_new, y_new)) + 'knn percent on first playoffs')
 print(str(clfgtb.score(x_new, y_new)) + ' gdpercent on first playoffs')
 print(str(clf.score(x_new, y_new)) + 'clf percent on first playoffs')
 print(str(svc.score(x_new, y_new)) + 'svm percent on first playoffs')
 
+prob_pos_gd = clfgtb.predict_proba(x_new)[:, 1]
+clf_score = brier_score_loss(y_new, prob_pos_gd)
+print(clf_score)
+
+clf_sigmoid = CalibratedClassifierCV(clfgtb, cv=2, method='sigmoid')
+clf_sigmoid.fit(x_new, y_new)
+# clfgtb = clf_sigmoid
+prob_pos_sigmoid = clfgtb.predict_proba(x_new)[:, 1]
+clf_sigmoid_score = brier_score_loss(y_new, prob_pos_sigmoid)
+print(clf_sigmoid_score)
 # probssvc = svc.predict_proba(x_new)
 # probssvc = probssvc.tolist()
 
@@ -189,6 +205,7 @@ info_list = []
 abets = []
 hbets = []
 allbets = []
+n= 0
 for i in range(h):
 
 	home_winprob = probsgd[i][1]
@@ -244,11 +261,15 @@ for i in range(h):
 		a_bets = [away_winprob, a_line, evaway, bet_amt * roi_away, winner]
 		abets.append(a_bets)
 		allbets.append(a_bets)
+		n+= roi_away
+		#print(n)
 
 	if evhome > 0:
 		h_bets = [home_winprob, h_line, evhome, bet_amt * roi_home, winner]
 		hbets.append(h_bets)
 		allbets.append(h_bets)
+		n+=roi_home
+		#print(n)
 	info_list.append(info)
 	
 	
@@ -257,38 +278,38 @@ home_df = pd.DataFrame(hbets, columns = ['home_winprob', 'h_line', 'evhome', 'ro
 away_df = pd.DataFrame(abets, columns = ['away_winprob', 'a_line', 'evaway', 'roi_away', 'winner'])
 
 home_roi = home_df['roi_home'].sum() 
-print(home_roi)
+#print(home_roi)
 home_ev = home_df['evhome'].sum()
-print('this is it boi')
-print(home_ev)
-print(home_df.head())
-print(away_df.head())
+# print('this is it boi')
+# print(home_ev)
+# print(home_df.head())
+# print(away_df.head())
 
 away_roi = away_df['roi_away'].sum() 
-print(away_roi)
+# print(away_roi)
 away_ev = away_df['evaway'].sum()
-print('this is it boi')
-print(away_ev)
+# print('this is it boi')
+# print(away_ev)
 
 total_roi = all_df['roi'].sum() 
 print(total_roi)
 total_ev = all_df['ev'].sum()
 print('this is it boi')
 print(total_ev)
-print(all_df.shape)
+#print(all_df.shape)
 #print(all_df)
-print(home_df)
-print(away_df)
+#print(home_df)
+#print(away_df)
 average = all_df['roi'].mean() 
-print(all_df['roi'])
+#print(all_df['roi'])
 print(average)
 #g1 = [[1595, 1662, 120.37, 108.62, 110.9, 106.3]]
 #g2 = [[1651, 1673, 121.9, 108.6, 112.6, 106.225]]
-g1 = [[1609, 1627, 107.5, 98.1, 110.76, 109.75]]
-g2 = [[1647, 1609, 115.7, 109.5, 110.4, .2]]
+g1 = [[1600, 1657, 104, 105.7, 122.2, 113.6]]
+g2 = [[1670, 1653, 115.7, 109.5, 123.1, 113]]
 g3 = [[1525, 1500, 120, 105, 120, 115]]
-line1h = -180
-line1a = 150
+line1h = -170
+line1a = 140
 
 
 pred1 = clfgtb.predict(g1)

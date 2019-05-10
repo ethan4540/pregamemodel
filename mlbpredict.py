@@ -24,45 +24,17 @@ warnings.filterwarnings('ignore')
 import pickle
 
 
-df = pd.read_csv('2011mlb.csv')
-df = df.dropna()
-df = df.drop_duplicates()
 
-
-
-df3 = pd.read_csv('2014mlb.csv')
-df3 = df3.dropna()
-df3 = df3.drop_duplicates()
-
-
-
-df6 = pd.read_csv('2015mlb.csv')
-df6 = df6.dropna()
-df6 = df6.drop_duplicates()
-
-df4 = pd.read_csv('2018mlb.csv')
-df4 = df4.dropna()
-df4 = df4.drop_duplicates()
-
-df5 = pd.read_csv('2016mlb.csv')
-df5 = df5.dropna()
-df5 = df5.drop_duplicates()
-
-df7 = pd.read_csv('2013mlb.csv')
-df7 = df7.dropna()
-df7 = df7.drop_duplicates()
-
-df = pd.concat([df, df3, df6, df7, df5, df4])
-
-list1 = ['Past_10_v', 'Past_10_h', 'rating1_pre', 'rating2_pre']
+list1 = ['Past_10_h', 'Past_10_v']
 #Past_10_v	Past_10_h rating1_pre	rating2_pre
 # , 'Past_10_h', 'Past_10_v' , 'rating2_pre'
 
-train_years = ['2011', '2013', '2014', '2015', '2016', '2017']
-test_years = ['2018']
+train_years = ['2014']
+test_years = ['2013']
 sport = 'mlb'
-train_fns = ['./data/' + year + sport + '.csv' for year in train_years]
-test_fns = ['./data/' + year + sport + '.csv' for year in test_years]
+train_fns = ['./data/' + sport + '_' + year + 's.csv' for year in train_years]
+test_fns = ['./data/' + sport + '_' + year + 's.csv' for year in test_years]
+
 def clean(fn):
     df = pd.read_csv(fn)
     df = df.dropna()
@@ -96,15 +68,15 @@ y = train_df['h_win']
 clfgtb = GradientBoostingClassifier(random_state = 0, n_estimators = 43, max_depth = 1, learning_rate = 1).fit(x, y)
 
 
-df2 = pd.read_csv('2017mlb.csv')
-df2 = df2.dropna()
-df2 = df2.drop_duplicates()
+# df2 = pd.read_csv('2017mlb.csv')
+# df2 = df2.dropna()
+# df2 = df2.drop_duplicates()
 
 new_feature_cols = list1
-x_new = df2[new_feature_cols]
-y_new = df2['h_win']
+x_new = test_df[new_feature_cols]
+y_new = test_df['h_win']
 
-guy = df2['h_ML']
+guy = test_df['h_ML']
 print(guy)
 
 
@@ -113,18 +85,19 @@ print(str(clfgtb.score(x_new, y_new)) + ' gdpercent on first playoffs')
 probsgd = clfgtb.predict_proba(x_new)
 probsgd = probsgd.tolist()
 h = len(probsgd)
-print(df2.columns)
+#print(df2.columns)
 
 h_lines = list(guy)
 
 
-a_lines = df2['Open']
+a_lines = test_df['Open']
 a_lines = list(a_lines)
-winners = df2['h_win']
+winners = test_df['h_win']
 winners = list(winners)
 abets = []
 hbets = []
 allbets = []
+n = 0
 for i in range(h):
 
 	home_winprob = probsgd[i][1]
@@ -174,18 +147,44 @@ for i in range(h):
 		bet_amt = 3
 
 
-	if evaway > 0:
-		a_bets = [away_winprob, a_line, evaway, bet_amt*roi_away, winner]
+	if evaway > .1:
+		a_bets = [away_winprob, a_line, evaway, roi_away, winner]
 		abets.append(a_bets)
 		allbets.append(a_bets)
+		n += roi_away
 
-	if evhome > 0:
-		h_bets = [home_winprob, h_line, evhome, bet_amt*roi_home, winner]
+	if evhome > .1:
+		h_bets = [home_winprob, h_line, evhome, roi_home, winner]
 		hbets.append(h_bets)
 		allbets.append(h_bets)
+		n += roi_home
+
+
 
 all_df = pd.DataFrame(allbets, columns = ['winprob', 'line', 'ev', 'roi', 'winner'])
+home_df = pd.DataFrame(hbets, columns = ['winprob', 'line', 'ev', 'roi', 'winner'])
+away_df = pd.DataFrame(abets, columns = ['winprob', 'line', 'ev', 'roi', 'winner'])
+
+
+
 total_roi = all_df['roi'].sum() 
+rois = all_df['roi']
+n = 0
+for roi in rois:
+	n += roi
+	print(n)
+	print(roi)
+
 print(total_roi)
-print(all_df)
-	
+#print(all_df)
+print(home_df)
+print(away_df)
+print(n)
+print(all_df['roi'].mean())
+
+g1 = [[.4, .7]]
+pred1 = clfgtb.predict(g1)
+prob1 = clfgtb.predict_proba(g1)
+print(prob1)
+print(pred1)
+
