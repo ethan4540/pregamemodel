@@ -4,10 +4,17 @@ import requests as r
 import macros as m
 import open_functions as of
 
-# to get all boxscore urls
+def get_teams_links():
+	page = of.open_page(m.url)
+	table = page.find('table', {'id': 'teams_active'})
+	tbody = table.tbody
+	links = tbody.find_all('a')
 
-# https://www.baseball-reference.com/teams/ARI/2018-schedule-scores.shtml
+	three_letters = []
+	for link in links:
+		three_letters.append(link['href'][7:10])
 
+	print(three_letters)
 
 
 
@@ -43,14 +50,8 @@ def get_boxscores(page):
 
 	rows = []
 	for row in tbody:
-		try:
-			suffix = row.find('td', {'data-stat': 'boxscore'})
-			try:
-				suffix = suffix.a['href']
-			except AttributeError:
-				continue
-		except TypeError:
-			continue
+		suffix = row.find('td', {'data-stat': 'boxscore'})
+		suffix = suffix.a['href']	
 		rows.append(suffix)
 	return rows
 
@@ -61,7 +62,7 @@ def boxscore(url):
 	html = bs4.BeautifulSoup(comments[31])
 
 
-
+get_teams_links()
 
 
 # if __name__ == '__main__':

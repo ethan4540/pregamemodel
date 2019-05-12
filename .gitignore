@@ -1,5 +1,6 @@
 # need to ignore pycaches
+
 /mlbpbp/mlbpbp/__pycache__
 /mlbpbp/mlbpbp/spiders/__pycache__
 
-
+__pycache__/

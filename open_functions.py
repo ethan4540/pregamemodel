@@ -18,6 +18,7 @@ def open_xml(url):
     page = bs4.BeautifulSoup(page_html, "lxml")
     return page
 
+
 def open_file(file_name):
     file = open(file_name, "w", encoding="utf-8")
     return file
