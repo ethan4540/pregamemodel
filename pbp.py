@@ -10,33 +10,27 @@ def get_table(page, table_id):  # given bs4 page and table id, finds table using
 
 
 def get_team_links():
-	page = of.page(m.url)
-	tobdy = get_table(page, 'teams_active')
+	page = of.page(m.url + m.teams_url)
+	tbody = get_table(page, 'teams_active')
 	rows = tbody.find_all('tr')
-	team_names = []
+
 	links = []
 	for row in rows:
 		if row.th == None:
 			continue
 		a = row.a
 		links.append(a['href'])
+	# print(links)
 	return links
 
 
-def team_schedule_urls(years, team):
+def team_seasons(team_link, years):
 	urls = []
-	while years[0] < years[1]:
-		full_url = m.url + team + '/' + str(years[0]) + m.games_suffix
-		years[0] += 1
+	tmp = years[0]
+	while tmp <= years[1]:
+		full_url = m.url + team_link + str(tmp) + m.schedule_suffix
 		urls.append(full_url)
-	return urls
-
-def team_seasons():
-	urls = []
-	while years[0] < years[1]:
-		full_url = m.url + team + '/' + str(years[0]) + m.games_suffix
-		years[0] += 1
-		urls.append(full_url)
+		tmp += 1
 	return urls
 
 
@@ -52,8 +46,9 @@ def get_comments(page):
 	return comments
 
 
-def get_boxscores(page):
+def get_boxscores(schedule_page):
 	rows = []
+	tbody = get_table(schedule_page, 'team_schedule')
 	for row in tbody:
 		suffix = row.find('td', {'data-stat': 'boxscore'})
 		suffix = suffix.a['href']	
@@ -62,23 +57,27 @@ def get_boxscores(page):
 
 
 def pbp(boxscore_url):  # given boxscore url, returns pbp table as soup
-	page = get_pages([boxscore_url])
+	page = of.page(boxscore_url)
 	comments = get_comments(page)
 	pbp = bs4.BeautifulSoup(comments[31], 'html.parser')
 	return pbp 
 
+def get_schedules(team_links, years)
+	all_schedules = []
+	for team_link in team_links:
+		years = tmp_years
+		all_schedules += team_seasons(team_link, years)  # list of full urls
+	return all_schedules
 
-years = [2010, 2019]
+# years = [2010, 2019]
 
-def main(years):  # years is list
-	start_year = years[0]
-	teams = get_team_links()  # list of urls
-	for team in teams:
-		years[0] = start_year
-		while years[0] < years[1]
-			# TODO
-			season = 
-			years[0] += 1
+def main(years=[2010, 2019]):  # years is list
+	tmp_years = years
+	team_links = get_team_links()  # list of urls
+	schedule_links = get_schedules(team_links, years)
+	for link in schedule_links:
+		boxscores = get_boxscores(
+			)
 
 # if __name__ == '__main__':
 # 	years = [2010, 2019]

@@ -2,9 +2,11 @@
 
 data = '/data/'
 
-url = 'https://www.baseball-reference.com/teams/'
+url = 'https://www.baseball-reference.com'
 
-games_suffix = '-schedule-scores.shtml'
+teams_url = '/teams/'
+
+schedule_suffix = '-schedule-scores.shtml'
 
 mlb_teams_short = ['ARI', 'ATL', 'BAL', 'BOS', 'CHC', 'CHW', 'CIN', 'CLE', 'COL', 'DET', 
 			'HOU', 'KCR', 'ANA', 'LAD', 'FLA', 'MIL', 'MIN', 'NYM', 'NYY', 'OAK',
