@@ -59,6 +59,7 @@ def game_links(schedule_links):
 		for suffix in suffixes:
 			link = suffix.a['href']
 			links.append(link)
+			print('.', end='')
 	return links
 
 
@@ -83,22 +84,22 @@ def pbp(boxscore_url):  # given boxscore url, returns pbp table as soup
 
 
 def parse_pbp(table):
-	file = open('./data/demo_pbp.csv', 'a+')
+	
 	tbody = table.tbody
 	rows = tbody.find_all('tr')
 	for row in rows:
-		print(row)
 
-		# if row['id'] is None:
-		# 	continue
+		row_len = len(row)
+
+		if row.get('id') is None:
+			continue
 
 		for num, item in enumerate(row):
 			file.write(item.text)
-			if num == row_len:
+			if num == row_len - 1:
 				file.write('\n')
 			else:
 				file.write(',')
-	file.close()
 
 
 def all_games():
@@ -109,11 +110,13 @@ def all_games():
 
 
 def main():  # years is list
+	file = open('./data/MLB_PBP_TEST.csv', 'a+')
 	game_links = all_games()
 	all_pbp = []
-	for game in game_links:
-		all_pbp += pbp(m.url + game)
-	return all_pbp
+	for i, game in enumerate(game_links):
+		game_pbp = pbp(m.url + game)
+		file.write(game + ',')
+		parse_pbp(game_pbp)
 
 
 def test_parse(url='https://www.baseball-reference.com/boxes/OAK/OAK201903200.shtml'):
