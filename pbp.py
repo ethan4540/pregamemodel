@@ -24,7 +24,7 @@ def team_links():
 	return links
 
 
-def team_season_links(team_link, years=[2010, 2019]):
+def team_season_links(team_link, years=[2010, 2018]):
 	urls = []
 	tmp = years[0]
 	while tmp <= years[1]:
@@ -83,8 +83,7 @@ def pbp(boxscore_url):  # given boxscore url, returns pbp table as soup
 	return pbp
 
 
-def parse_pbp(table):
-	
+def parse_pbp(table, game_id, file):
 	tbody = table.tbody
 	rows = tbody.find_all('tr')
 	for row in rows:
@@ -94,7 +93,10 @@ def parse_pbp(table):
 		if row.get('id') is None:
 			continue
 
+		file.write(game_id + ',')
+
 		for num, item in enumerate(row):
+			print(item.text)
 			file.write(item.text)
 			if num == row_len - 1:
 				file.write('\n')
@@ -110,13 +112,16 @@ def all_games():
 
 
 def main():  # years is list
-	file = open('./data/MLB_PBP_TEST.csv', 'a+')
+	file = open('./data/mlb2.csv', 'a+')
 	game_links = all_games()
 	all_pbp = []
 	for i, game in enumerate(game_links):
 		game_pbp = pbp(m.url + game)
-		file.write(game + ',')
-		parse_pbp(game_pbp)
+		if game_pbp is None:
+			continue
+		parse_pbp(game_pbp, game, file)
+
+	file.close()
 
 
 def test_parse(url='https://www.baseball-reference.com/boxes/OAK/OAK201903200.shtml'):
