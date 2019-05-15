@@ -112,7 +112,7 @@ def all_games():
 
 
 def main():  # years is list
-	file = open('./data/mlb2.csv', 'a+')
+	file = open('./data/mlb3.csv', 'a+')
 	game_links = all_games()
 	all_pbp = []
 	for i, game in enumerate(game_links):
