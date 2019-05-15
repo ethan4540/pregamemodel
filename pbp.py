@@ -43,7 +43,6 @@ def schedule_links(team_links):
 
 def game_links(schedule_links):
 	links = []
-	file = open('./data/game_links.csv', 'a')
 	for schedule in schedule_links:
 		full_link = m.url + schedule
 		schedule_page = of.page(full_link)
@@ -59,7 +58,6 @@ def game_links(schedule_links):
 		suffixes = tbody.find_all('td', {'data-stat': 'boxscore'})
 		for suffix in suffixes:
 			link = suffix.a['href']
-			file.write(link + '\n')
 			links.append(link)
 	return links
 
@@ -90,15 +88,12 @@ def all_games():
 	return games
 
 
-def main(years=[2010, 2019]):  # years is list
-	teams = team_links()  # list of urls
-	schedules = schedule_links(teams, years)
-	games = game_links(schedules)
-	for link in games:
-		full_url = m.url + link
-		page = of.page(full_url)
-
-
+def main():  # years is list
+	game_links = all_games()
+	all_pbp = []
+	for game in game_links:
+		all_pbp += pbp(m.url + game)
+	return all_pbp
 # if __name__ == '__main__':
 # 	years = [2010, 2019]
 # 	# team = 'ARI'
