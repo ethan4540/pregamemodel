@@ -76,9 +76,29 @@ def comments(page):
 
 def pbp(boxscore_url):  # given boxscore url, returns pbp table as soup
 	page = of.page(boxscore_url)
-	comments = get_comments(page)
-	pbp = bs4.BeautifulSoup(comments[31], 'html.parser')
+	comment_list = comments(page)
+	pbp_raw = bs4.BeautifulSoup(comment_list[31], 'html.parser')
+	pbp = get_table(pbp_raw, 'play_by_play')
 	return pbp
+
+
+def parse_pbp(table):
+	file = open('./data/demo_pbp.csv', 'a+')
+	tbody = table.tbody
+	rows = tbody.find_all('tr')
+	for row in rows:
+		print(row)
+
+		# if row['id'] is None:
+		# 	continue
+
+		for num, item in enumerate(row):
+			file.write(item.text)
+			if num == row_len:
+				file.write('\n')
+			else:
+				file.write(',')
+	file.close()
 
 
 def all_games():
@@ -94,29 +114,8 @@ def main():  # years is list
 	for game in game_links:
 		all_pbp += pbp(m.url + game)
 	return all_pbp
-# if __name__ == '__main__':
-# 	years = [2010, 2019]
-# 	# team = 'ARI'
-	
-# 	fn = '.' + m.data + 'ARI_BOXSCORE_LINKS' + '.csv'
 
-# 	file = of.file(fn)
-# 	urls = team_schedule_urls(years, team)
 
-# 	pages = get_pages(urls)
-
-# 	all_boxscore_urls = []
-# 	for page in pages:
-# 		urls = get_boxscores(page)
-# 		if urls is None:
-# 			continue
-# 		all_boxscore_urls += urls
-
-# 	for url in all_boxscore_urls:
-# 		file.write(url)
-# 		file.write('\n')
-
-# file = open('./data/game_links.csv', 'a')
-
-# for link in bls:
-# 	file.write(link + '\n')
+def test_parse(url='https://www.baseball-reference.com/boxes/OAK/OAK201903200.shtml'):
+	p = pbp(url)
+	parse_pbp(p)
