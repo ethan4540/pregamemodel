@@ -1,12 +1,70 @@
+
 import bs4 
 import requests as r
 import macros as m
 import openers as of
-
+import sys
 
 def get_table(page, table_id):  # given bs4 page and table id, finds table using bs4. returns tbody
 	table = page.find('table', {'id': table_id})
 	return table
+
+
+def prev_day_link(page):
+	return page.find('a', {'class' : 'button2 prev'})['href']	
+
+
+def boxes(stop_date='/boxes/?year=2000&month=03&day=28'):
+	file = open('./data/no_repeat_boxes.csv', 'w')
+	
+	start_date = '/boxes/?year=2019&month=05&day=17'
+	
+	page = of.page(m.url + start_date) 
+	prev_day = prev_day_link(page)
+
+	box_links = []
+
+	while prev_day != stop_date:
+		links =  page.find_all('td' , {'class': 'right gamelink'})
+		box_links += [elt.a['href'] for elt in links]
+		print(links)
+		print('len: {}'.format(len(links)))
+		print(prev_day)
+		sys.stdout.flush()
+
+		page = of.page(m.url + prev_day)
+
+		prev_day = prev_day_link(page)
+
+	for l in box_links:
+		file.write(l + '\n')
+		print(',', end='')
+
+	file.close()
+
+def box(url):
+	p = of.page(url)
+	cs = comments(p)
+	t1_batting = cs[15]
+	t2_batting = cs[16]
+	pitching = cs[20]
+	stats = [t1_batting, t2_batting, pitching]
+	return stats
+
+def batting_parse(bat_comment):
+	soup = bs4.BeautifulSoup(bat_comment)
+	tbody = soup.table.tbody
+	rows = tbody.find_all('tr')
+	for row in rows:
+		
+		row_class = row.get('class')
+		
+		if row_class == 'spacer':
+			continue
+
+		
+
+def pitching_parse(pitch_comment):
 
 
 def team_links():
