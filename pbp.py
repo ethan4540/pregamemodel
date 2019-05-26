@@ -62,10 +62,26 @@ def batting_parse(bat_comment):
 		if row_class == 'spacer':
 			continue
 
+
+def players():
+	suffix = '/players/'
+	letter = 'a'
+
+	player_list = []
+
+	while ord(letter) < 123:
+		url = m.url + suffix + letter
+		page = of.page(url)
+		div_players = page.find('div', {'id' : 'div_players_'})
+		players = div_players.find_all('a')
+		player_list += players
+		print('.')
+		letter = chr(ord(letter) + 1)
 		
+	return player_list
 
 def pitching_parse(pitch_comment):
-
+	pass
 
 def team_links():
 	page = of.page(m.url + m.teams_url)
@@ -119,6 +135,25 @@ def game_links(schedule_links):
 			links.append(link)
 			print('.', end='')
 	return links
+
+
+def player_game_logs(page):
+	urls = []
+	final = []
+	bot_nav = page.find('div', {'id' : 'bottom_nav_container'})
+	p_tags = bot_nav.find_all('p')
+	for p in p_tags:
+		if p.text == 'Batting Game Logs' or p.text == 'Pitching Game Logs' or p.text == 'Fielding Game Logs':
+			a_tags = p.find_all('a')
+			del a_tags[0]  # delete the career link
+			urls += a_tags
+	for url in urls:
+		final.append(url['href'])
+	return final
+
+# find the index in the list of <p> tags which corresponds to pitching, batting, and fielding game logs 
+# since the bottom nav container has one extra p tag, subtract one to these relevent ul tags in bot_nav
+# find all a tags and append to url 
 
 
 def pages(urls):
