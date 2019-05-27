@@ -10,11 +10,27 @@ def get_table(page, table_id):  # given bs4 page and table id, finds table using
 	return table
 
 
+def parse_table(table):
+	t = table.table
+	tbody = t.tbody
+	rows = tbody.find_all('tr')
+	for row in rows:
+
+		row_class = row.get('class')
+		if row_class == 'spacer':
+			continue
+		
+		print(row.text)
+		things = row.find_all('th')
+		for thing in things:
+			print(thing.text)
+
+
 def prev_day_link(page):
 	return page.find('a', {'class' : 'button2 prev'})['href']	
 
 
-def boxes(stop_date='/boxes/?year=2000&month=03&day=28'):
+def get_box_links(stop_date='/boxes/?year=2000&month=03&day=28'):
 	file = open('./data/no_repeat_boxes.csv', 'w')
 	
 	start_date = '/boxes/?year=2019&month=05&day=17'
@@ -41,15 +57,25 @@ def boxes(stop_date='/boxes/?year=2000&month=03&day=28'):
 		print(',', end='')
 
 	file.close()
+	return box_links
 
-def box(url):
+
+def write_boxscores(links):
+	file = open('tmp', 'w')
+	for link in links:
+		b = box(link)[0]
+
+
+def box(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.shtml'):
 	p = of.page(url)
 	cs = comments(p)
 	t1_batting = cs[15]
 	t2_batting = cs[16]
 	pitching = cs[20]
 	stats = [t1_batting, t2_batting, pitching]
-	return stats
+	for i, stat in enumerate(stats):
+		stats[i] = bs4.BeautifulSoup(stat, 'html.parser')
+
 
 def batting_parse(bat_comment):
 	soup = bs4.BeautifulSoup(bat_comment)
@@ -80,8 +106,50 @@ def players():
 		
 	return player_list
 
-def pitching_parse(pitch_comment):
-	pass
+
+def player_game_logs(player_page=of.page('https://www.baseball-reference.com/players/c/cruzne02.shtml')):
+	batting = []
+	pitching = []
+	fielding = []
+
+	bot_nav = player_page.find('div', {'id' : 'bottom_nav_container'})
+	
+	ul_tags = bot_nav.find_all('ul')
+	p_tags = bot_nav.find_all('p')
+
+	for p in p_tags:
+
+		if p.text == 'Batting Game Logs':
+			batting = ul_tags[p_tags.index(p) - 2].find_all('a')
+		if p.text == 'Pitching Game Logs':
+			pitching = ul_tags[p_tags.index(p) - 2].find_all('a')
+		if p.text == 'Fielding Game Logs':
+			fielding = ul_tags[p_tags.index(p) - 2].find_all('a')
+	
+	for elt in [batting, pitching, fielding]:
+		for item in elt:
+			elt.index(item) = item['href']
+	return [batting, pitching, fielding]
+
+# find the index in the list of <p> tags which corresponds to pitching, batting, and fielding game logs 
+# since the bottom nav container has one extra p tag, subtract one to these relevent ul tags in bot_nav
+# find all a tags and append to url 
+
+def game_logs():
+	all_urls = []
+	p_list = players()
+	for p in p_list:
+		page = of.page(p)
+		urls = player_game_logs(page)
+		for url_list in urls:
+			for url in url_list:
+				log_page = of.page(m.url + url)
+
+				if urls.index(url_list) == 0:
+					data = get_table(log_page, 'batting_gamelogs')
+					
+
+
 
 def team_links():
 	page = of.page(m.url + m.teams_url)
@@ -135,25 +203,6 @@ def game_links(schedule_links):
 			links.append(link)
 			print('.', end='')
 	return links
-
-
-def player_game_logs(page):
-	urls = []
-	final = []
-	bot_nav = page.find('div', {'id' : 'bottom_nav_container'})
-	p_tags = bot_nav.find_all('p')
-	for p in p_tags:
-		if p.text == 'Batting Game Logs' or p.text == 'Pitching Game Logs' or p.text == 'Fielding Game Logs':
-			a_tags = p.find_all('a')
-			del a_tags[0]  # delete the career link
-			urls += a_tags
-	for url in urls:
-		final.append(url['href'])
-	return final
-
-# find the index in the list of <p> tags which corresponds to pitching, batting, and fielding game logs 
-# since the bottom nav container has one extra p tag, subtract one to these relevent ul tags in bot_nav
-# find all a tags and append to url 
 
 
 def pages(urls):
