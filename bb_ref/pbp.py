@@ -113,7 +113,7 @@ def batting_parse(bat_comment):
 			continue
 
 
-def players(letter='e'):
+def players(letter='f'):
 	suffix = '/players/'
 	# letter = 'a'
 

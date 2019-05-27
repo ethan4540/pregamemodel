@@ -10,11 +10,15 @@ headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleW
 
 def page(url): 
     site = None
+    i = 0
     while site == None:
         try:
             site = r.get(url, headers=headers)
         except ConnectionError:
+            i += 1
             time.sleep(2)
+            if i == 5:
+                return
     page_html = site.content
     page = bs4.BeautifulSoup(page_html, "html.parser")
     return page
