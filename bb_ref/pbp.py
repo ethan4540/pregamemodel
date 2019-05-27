@@ -113,9 +113,9 @@ def batting_parse(bat_comment):
 			continue
 
 
-def players():
+def players(letter='e'):
 	suffix = '/players/'
-	letter = 'a'
+	# letter = 'a'
 
 	player_list = []
 
@@ -166,10 +166,8 @@ def game_logs():
 	p_list = players()
 
 	for i, p in enumerate(p_list):
-		all_data.append= player_game_log_urls(p['href'])
-
-
-	return [b, p, f]
+		url = p['href']
+		write_player_history(url)
 
 
 def player_history(player_url='/players/c/cruzne02.shtml'):
@@ -182,7 +180,10 @@ def player_history(player_url='/players/c/cruzne02.shtml'):
 
 	for i, stat_type in enumerate(all_years):  # each stat type is a list of urls to years
 		for year in stat_type:
-			page = of.page(m.url + year)
+			try:
+				page = of.page(m.url + year)
+			except ConnectionError:
+				continue
 			data[i].append(get_table(page, ids[all_years.index(stat_type)]))
 
 	return data
@@ -198,7 +199,10 @@ def url_to_player_id(player_url='/players/c/cruzne02.shtml'):
 def write_player_history(player_url='/players/c/cruzne02.shtml'):
 	types = ['b', 'p', 'f']
 	player_id = url_to_player_id(player_url)
-	os.mkdir('.' + m.data + 'player_data/' + player_id)
+	try:
+		os.mkdir('.' + m.data + 'player_data/' + player_id)
+	except FileExistsError:
+		pass
 	data = player_history(player_url)
 	for i, stat_type in enumerate(data):
 		for j, year in enumerate(stat_type):
