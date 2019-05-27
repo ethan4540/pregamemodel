@@ -1,16 +1,18 @@
+import os
+import sys
 
 import bs4 
 import requests as r
 import macros as m
 import openers as of
-import sys
+
 
 def get_table(page, table_id):  # given bs4 page and table id, finds table using bs4. returns tbody
 	table = page.find('table', {'id': table_id})
 	return table
 
 
-def parse_table(table):
+def parse_table(table, split='th'):
 	tbody = table.tbody
 	rows = tbody.find_all('tr')
 	for row in rows:
@@ -20,9 +22,32 @@ def parse_table(table):
 			continue
 		
 		print(row.text)
-		things = row.find_all('th')
+		things = row.find_all(split)
 		for thing in things:
 			print(thing.text)
+
+
+def write_table(table, fn, split='th'):
+	try:
+		tbody = table.tbody
+	except AttributeError:
+		return
+	file = open('.' + m.data + fn + '.csv', 'w')
+	rows = tbody.find_all('tr')
+	for row in rows:
+		row_class = row.get('class')
+		if row_class is None:  # when the row class is none it is a data row
+			row_data = row.find_all(split)
+			for i, data_pt in enumerate(row_data):
+				file.write(data_pt.text)
+				
+				if i == len(row_data) - 1:
+					file.write('\n')
+				else:
+					file.write(',')
+
+	print('{} written to {}'.format(fn, m.data))
+	file.close()
 
 
 def prev_day_link(page):
@@ -146,8 +171,9 @@ def game_logs():
 
 	return [b, p, f]
 
+
 def player_history(player_url='/players/c/cruzne02.shtml'):
-	ids = ['batting_gamelogs', 'pitching_gamelogs', 'fielding_gamelogs']
+	ids = ['batting_gamelogs', 'pitching_gamelogs', '_0']
 	
 	# data is a list of 3 lists, where each element is a year of data for the given stats b, p, f respectively
 	data = [[], [], []]
@@ -161,8 +187,23 @@ def player_history(player_url='/players/c/cruzne02.shtml'):
 
 	return data
 
-def write_player_history(data):
-	pass	
+
+
+def url_to_player_id(player_url='/players/c/cruzne02.shtml'):
+	almost = player_url.split('/')[3]
+	player_id = almost.split('.')[0]
+	return player_id
+
+
+def write_player_history(player_url='/players/c/cruzne02.shtml'):
+	types = ['b', 'p', 'f']
+	player_id = url_to_player_id(player_url)
+	os.mkdir('.' + m.data + 'player_data/' + player_id)
+	data = player_history(player_url)
+	for i, stat_type in enumerate(data):
+		for j, year in enumerate(stat_type):
+			fn = 'player_data/' + player_id + '/' + player_id + '_' + types[i] + '_' + str(j)
+			write_table(year, fn, 'td')
 
 
 def team_links():
