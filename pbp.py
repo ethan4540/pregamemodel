@@ -11,8 +11,7 @@ def get_table(page, table_id):  # given bs4 page and table id, finds table using
 
 
 def parse_table(table):
-	t = table.table
-	tbody = t.tbody
+	tbody = table.tbody
 	rows = tbody.find_all('tr')
 	for row in rows:
 
@@ -107,10 +106,12 @@ def players():
 	return player_list
 
 
-def player_game_logs(player_page=of.page('https://www.baseball-reference.com/players/c/cruzne02.shtml')):
+def player_game_log_urls(player_url='/players/c/cruzne02.shtml'):
 	batting = []
 	pitching = []
 	fielding = []
+	
+	player_page = of.page(m.url + player_url)
 
 	bot_nav = player_page.find('div', {'id' : 'bottom_nav_container'})
 	
@@ -118,7 +119,6 @@ def player_game_logs(player_page=of.page('https://www.baseball-reference.com/pla
 	p_tags = bot_nav.find_all('p')
 
 	for p in p_tags:
-
 		if p.text == 'Batting Game Logs':
 			batting = ul_tags[p_tags.index(p) - 2].find_all('a')
 		if p.text == 'Pitching Game Logs':
@@ -128,7 +128,8 @@ def player_game_logs(player_page=of.page('https://www.baseball-reference.com/pla
 	
 	for elt in [batting, pitching, fielding]:
 		for item in elt:
-			elt.index(item) = item['href']
+			elt[elt.index(item)] = item['href']
+
 	return [batting, pitching, fielding]
 
 # find the index in the list of <p> tags which corresponds to pitching, batting, and fielding game logs 
@@ -136,19 +137,32 @@ def player_game_logs(player_page=of.page('https://www.baseball-reference.com/pla
 # find all a tags and append to url 
 
 def game_logs():
-	all_urls = []
+	all_data = []
 	p_list = players()
-	for p in p_list:
-		page = of.page(p)
-		urls = player_game_logs(page)
-		for url_list in urls:
-			for url in url_list:
-				log_page = of.page(m.url + url)
 
-				if urls.index(url_list) == 0:
-					data = get_table(log_page, 'batting_gamelogs')
-					
+	for i, p in enumerate(p_list):
+		all_data.append= player_game_log_urls(p['href'])
 
+
+	return [b, p, f]
+
+def player_history(player_url='/players/c/cruzne02.shtml'):
+	ids = ['batting_gamelogs', 'pitching_gamelogs', 'fielding_gamelogs']
+	
+	# data is a list of 3 lists, where each element is a year of data for the given stats b, p, f respectively
+	data = [[], [], []]
+
+	all_years = player_game_log_urls(player_url)
+
+	for i, stat_type in enumerate(all_years):  # each stat type is a list of urls to years
+		for year in stat_type:
+			page = of.page(m.url + year)
+			data[i].append(get_table(page, ids[all_years.index(stat_type)]))
+
+	return data
+
+def write_player_history(data):
+	pass	
 
 
 def team_links():
