@@ -5,5 +5,7 @@
 
 /__pycache__/
 
+./bb_ref/data
 bb_ref/data/player_data/
+
 
