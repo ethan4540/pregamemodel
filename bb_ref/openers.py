@@ -14,7 +14,7 @@ def page(url):
     while site == None:
         try:
             site = r.get(url, headers=headers)
-        except ConnectionError:
+        except (ConnectionError, SSLError):
             i += 1
             time.sleep(2)
             if i == 5:

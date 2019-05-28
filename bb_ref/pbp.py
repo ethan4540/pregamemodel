@@ -32,7 +32,10 @@ def write_table(table, fn, split='th'):
 		tbody = table.tbody
 	except AttributeError:
 		return
-	file = open('.' + m.data + fn + '.csv', 'w')
+	try:
+		file = open('.' + m.data + fn + '.csv', 'w')
+	except FileExistsError:
+		return
 	rows = tbody.find_all('tr')
 	for row in rows:
 		row_class = row.get('class')
@@ -113,7 +116,7 @@ def batting_parse(bat_comment):
 			continue
 
 
-def players(letter='f'):
+def players(letter='p'):
 	suffix = '/players/'
 	# letter = 'a'
 
