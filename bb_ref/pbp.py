@@ -178,9 +178,9 @@ def player_game_log_urls(player_url='/players/c/cruzne02.shtml'):
 # since the bottom nav container has one extra p tag, subtract one to these relevent ul tags in bot_nav
 # find all a tags and append to url 
 
-def game_logs():
+def game_logs(l='b'):
 	all_data = []
-	p_list = players()
+	p_list = players(letter=l)
 
 	for i, p in enumerate(p_list):
 		url = p['href']
@@ -230,7 +230,7 @@ def write_player_history(player_url='/players/c/cruzne02.shtml'):
 		for j, data_table in enumerate(stat_type):
 			if data_table is None:
 				continue
-				
+
 			year = data_table.caption.text.split(' ')[0]
 			fn = folder + player_id + '_' + types[i] + '_' + year
 			write_table(data_table, fn, 'td')
