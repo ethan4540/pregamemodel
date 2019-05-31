@@ -6,7 +6,7 @@ import requests as r
 
 save_path = '.'
 
-headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+headers = {'User-Agent': 'Mozilla/5.0'}
 
 def page(url): 
     site = None
@@ -14,7 +14,7 @@ def page(url):
     while site == None:
         try:
             site = r.get(url, headers=headers)
-        except (ConnectionError, SSLError):
+        except ConnectionError:
             i += 1
             time.sleep(2)
             if i == 5:

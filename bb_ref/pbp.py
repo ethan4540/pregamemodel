@@ -35,7 +35,21 @@ def write_table(table, fn, split='th'):
 	try:
 		file = open('.' + m.data + fn + '.csv', 'w')
 	except FileExistsError:
+		print('skip')
 		return
+
+	thead = table.thead
+	columns_row = thead.tr
+	col_items = columns_row.find_all('th')
+	for i, col in enumerate(col_items):
+		
+		file.write(col.text)
+
+		if i == len(col_items) - 1:
+			file.write('\n')
+		else:
+			file.write(',')
+
 	rows = tbody.find_all('tr')
 	for row in rows:
 		row_class = row.get('class')
@@ -116,7 +130,7 @@ def batting_parse(bat_comment):
 			continue
 
 
-def players(letter='p'):
+def players(letter='a'):
 	suffix = '/players/'
 	# letter = 'a'
 
@@ -128,7 +142,7 @@ def players(letter='p'):
 		div_players = page.find('div', {'id' : 'div_players_'})
 		players = div_players.find_all('a')
 		player_list += players
-		print('.')
+		print(letter)
 		letter = chr(ord(letter) + 1)
 		
 	return player_list
@@ -201,16 +215,25 @@ def url_to_player_id(player_url='/players/c/cruzne02.shtml'):
 
 def write_player_history(player_url='/players/c/cruzne02.shtml'):
 	types = ['b', 'p', 'f']
+	letter_folder = player_url.split('/')[2]
 	player_id = url_to_player_id(player_url)
+
+	data_root = '.' + m.data
+	folder = 'player_data2/' + letter_folder + '/' + player_id + '/'
+
 	try:
-		os.mkdir('.' + m.data + 'player_data/' + player_id)
+		os.makedirs(data_root + folder)
 	except FileExistsError:
 		pass
 	data = player_history(player_url)
 	for i, stat_type in enumerate(data):
-		for j, year in enumerate(stat_type):
-			fn = 'player_data/' + player_id + '/' + player_id + '_' + types[i] + '_' + str(j)
-			write_table(year, fn, 'td')
+		for j, data_table in enumerate(stat_type):
+			if data_table is None:
+				continue
+				
+			year = data_table.caption.text.split(' ')[0]
+			fn = folder + player_id + '_' + types[i] + '_' + year
+			write_table(data_table, fn, 'td')
 
 
 def team_links():
