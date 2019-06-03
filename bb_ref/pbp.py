@@ -80,10 +80,11 @@ def get_box_links(stop_date='/boxes/?year=2000&month=03&day=28'):
 	box_links = []
 
 	while prev_day != stop_date:
+		# month_num = str.split(';')[1].split('&')[0].split('=')
+		# if month_num == 1 or month_num == 2 or month_num == 12:
+		# 	prev_day = 
 		links =  page.find_all('td' , {'class': 'right gamelink'})
 		box_links += [elt.a['href'] for elt in links]
-
-		sys.stdout.flush()
 
 		page = of.page(m.url + prev_day)
 
@@ -132,6 +133,22 @@ def box_meta(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.shtm
 			params.append(data)
 		else:
 			params.append(text)
+
+	other_meta = bs4_parse(cs[21])
+
+	divs = other_meta.find_all('div')
+
+	weather = divs[4].text.replace(',', '')
+	weather = weather.split(': ')[1]
+
+	umps = other_meta.div.div.text.split(', ')
+	new_umps = []
+
+	for i, elt in enumerate(umps):
+	     new_umps.append(elt.split(' - ')[1])
+
+	params += new_umps
+	params.append(weather)
 
 	return params
 
@@ -367,8 +384,6 @@ def pbp(boxscore_url):  # given boxscore url, returns pbp table as soup
 
 def bs4_parse(text):
 	return bs4.BeautifulSoup(text, 'html.parser')
-
-
 
 def parse_pbp(table, game_id, file):
 	tbody = table.tbody

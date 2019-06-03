@@ -28,7 +28,7 @@ mlb_teams_full = ['Arizona Diamondbacks', 'Atlanta Braves', 'Baltimore Orioles',
 mlb_csv_columns = ['game_id', 'inning', 'score', 'outs', 'robs', 'pitch_count', 'pitches', 'runs_outs', 'at_bat', 'wwpa', 'wwe', 'desc']
 
 
-bb_ref_box_meta = ['id', 'date', 'start_time', 'attendance', 'venue', 'game_duration', 'game_type', 'ump_hp', 'ump_1b', 'ump_2b', 'ump_3b'
-					]
+bb_ref_box_meta = ['id', 'date', 'start_time', 'attendance', 'venue', 'game_duration', 'game_type', 'ump_hp', 'ump_1b', 'ump_2b', 'ump_3b',
+					'start_weather']
 
 bb_ref_lineup = ['id']
