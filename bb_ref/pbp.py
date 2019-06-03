@@ -71,9 +71,7 @@ def prev_day_link(page):
 	return page.find('a', {'class' : 'button2 prev'})['href']	
 
 
-def get_box_links(stop_date='/boxes/?year=2000&month=03&day=28'):
-	file = open('./data/no_repeat_boxes.csv', 'w')
-	
+def get_box_links(stop_date='/boxes/?year=2000&month=03&day=28'):	
 	start_date = '/boxes/?year=2019&month=05&day=17'
 	
 	page = of.page(m.url + start_date) 
@@ -84,20 +82,13 @@ def get_box_links(stop_date='/boxes/?year=2000&month=03&day=28'):
 	while prev_day != stop_date:
 		links =  page.find_all('td' , {'class': 'right gamelink'})
 		box_links += [elt.a['href'] for elt in links]
-		print(links)
-		print('len: {}'.format(len(links)))
-		print(prev_day)
+
 		sys.stdout.flush()
 
 		page = of.page(m.url + prev_day)
 
 		prev_day = prev_day_link(page)
 
-	for l in box_links:
-		file.write(l + '\n')
-		print(',', end='')
-
-	file.close()
 	return box_links
 
 
@@ -110,13 +101,77 @@ def write_boxscores(links):
 def box(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.shtml'):
 	p = of.page(url)
 	cs = comments(p)
+	meta = box_meta(p)
 	t1_batting = cs[15]
 	t2_batting = cs[16]
 	pitching = cs[20]
+	lineup = cs[25]
 	stats = [t1_batting, t2_batting, pitching]
 	for i, stat in enumerate(stats):
 		stats[i] = bs4.BeautifulSoup(stat, 'html.parser')
 
+
+def box_meta(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.shtml'):
+	game_id = url.split('/')[5].split('.')[0]
+
+	page = of.page(url)
+	cs = comments(page)
+
+	params = [game_id]
+	
+	meta = page.find('div', {'class' : 'scorebox_meta'})
+	meta_divs = meta.find_all('div')
+	for i, div in enumerate(meta_divs):
+		
+		text = div.text.replace(',', '')
+		if i > 5:
+			break
+		elif i > 0 and  i <= 4:
+			
+			data = text.split(': ')[1]
+			params.append(data)
+		else:
+			params.append(text)
+
+	return params
+
+
+def all_metas():
+	
+	data_root = '.' + m.data
+	
+	box_urls = get_box_links()
+
+	for url in box_urls:
+		write_meta()
+
+
+def write_meta(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.shtml'):
+	game_id = url.split('/')[5].split('.')[0]
+	data_root = '.' + m.data
+	params = box_meta(url)
+	date_split = params[1].split(' ')
+	
+	month = date_split[1]
+	year = date_split[3]
+
+	folder = 'boxes/' + year + '/' + month + '/ '+ game_id + '/'
+	path = data_root + folder
+	
+	os.makedirs(path)
+
+	fn = params[0] + '_meta.csv'
+	file = open(path + fn, 'w+')
+
+	for j, list_type in enumerate([m.bb_ref_box_meta, params]):
+		for i, field in enumerate(list_type):
+			file.write(field)
+			if i == len(m.bb_ref_box_meta) - 1:
+				file.write('\n')
+			else:
+				file.write(',')
+
+	file.close()
 
 def batting_parse(bat_comment):
 	soup = bs4.BeautifulSoup(bat_comment)
@@ -133,17 +188,17 @@ def batting_parse(bat_comment):
 def players(letter='a'):
 	suffix = '/players/'
 	# letter = 'a'
-
+	letters = ['n', 's', 'm']
 	player_list = []
 
-	while ord(letter) < 123:
-		url = m.url + suffix + letter
+	for let in letters:
+		url = m.url + suffix + let # ter
 		page = of.page(url)
 		div_players = page.find('div', {'id' : 'div_players_'})
 		players = div_players.find_all('a')
 		player_list += players
-		print(letter)
-		letter = chr(ord(letter) + 1)
+		print(let)
+		# letter = chr(ord(letter) + 1)
 		
 	return player_list
 
@@ -308,6 +363,11 @@ def pbp(boxscore_url):  # given boxscore url, returns pbp table as soup
 	pbp_raw = bs4.BeautifulSoup(comment_list[31], 'html.parser')
 	pbp = get_table(pbp_raw, 'play_by_play')
 	return pbp
+
+
+def bs4_parse(text):
+	return bs4.BeautifulSoup(text, 'html.parser')
+
 
 
 def parse_pbp(table, game_id, file):
