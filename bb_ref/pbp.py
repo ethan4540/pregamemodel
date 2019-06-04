@@ -7,6 +7,72 @@ import macros as m
 import openers as of
 
 
+def lineups():
+	urls = get_box_links(start_date='/boxes/?year=2018&month=7&day=19', stop_date='/boxes/?year=2015&month=3&day=28')
+	for url in urls:
+		data = one_linup(url)
+
+def one_lineup(url='/boxes/BAL/BAL201906020.shtml'):
+	p = of.page(m.url + url)
+	cs = comments(p)
+	lineups = cs[25]
+	parsed = bs4_parse(lineups)
+	tables = parsed.find_all('table')
+	rows = []
+	away_team_lineup = tables[0].find_all('tr')
+	home_team_lineup = tables[1].find_all('tr')
+	#return (away_team_lineup, home_team_lineup)
+	game_id = url.split('/')[3].split('.')[0].replace(' ', '')
+	header = p.strong.text.split(', ')
+	month = header[1].split(' ')[0]
+	year = header[2]
+
+	folder = 'boxes/' + year + '/' + month + '/' + game_id + '/'
+	path = '.' + m.data + folder
+
+	try:
+		os.makedirs(path)
+	except FileExistsError:
+		print('file: {} exists'.format(game_id))
+		pass
+
+	fn = game_id + '_team_lineups.csv'
+	file = open(path + fn, 'w')	
+
+
+	berlin = [tables[0].caption.text]
+	moscow = [tables[1].caption.text]
+	for row in away_team_lineup:
+		data = row.find_all('td')
+		data2 = [data[1], data[2]]
+		berlin += data2
+	for row in home_team_lineup:
+		data_h = row.find_all('td')
+		data_h2 = [data_h[1], data_h[2]]
+		moscow += data_h2
+
+	for i, j in enumerate(m.bb_ref_lineup):
+		print(j)
+		file.write(j)
+		if i == len(m.bb_ref_lineup) -1:
+			file.write('\n')
+		else:
+			file.write(',')
+	for i, j in enumerate(berlin):
+		file.write(j)
+		if i == len(m.bb_ref_lineup) -1:
+			file.write('\n')
+		else:
+			file.write(',')
+	for i, j in enumerate(moscow):
+		file.write(j)
+		if i == len(m.bb_ref_lineup) -1:
+			file.write('\n')
+		else:
+			file.write(',')	
+
+	file.close()
+
 def get_table(page, table_id):  # given bs4 page and table id, finds table using bs4. returns tbody
 	table = page.find('table', {'id': table_id})
 	return table
@@ -82,8 +148,8 @@ def prev_day_link(page):
 	return page.find('a', {'class' : 'button2 prev'})['href']	
 
 
-def get_box_links(stop_date='/boxes/?year=2019&month=3&day=28'):	
-	start_date = '/boxes/?year=2019&month=5&day=17'
+def get_box_links(start_date='/boxes/?year=2018&month=7&day=19', stop_date='/boxes/?year=2015&month=3&day=28'):	
+	
 	
 	page = of.page(m.url + start_date) 
 	prev_day = prev_day_link(page)
@@ -228,8 +294,10 @@ def all_metas():
 def write_meta(url='/boxes/ANA/ANA200704020.shtml'):
 
 	# todo, do i want to overwrite files?
-
-	game_id = url.split('/')[3].split('.')[0].replace(' ', '')
+	try:
+		game_id = url.split('/')[3].split('.')[0].replace(' ', '')
+	except IndexError:
+		return
 	print(game_id)
 	data_root = '.' + m.data
 	params = box_meta(url)
