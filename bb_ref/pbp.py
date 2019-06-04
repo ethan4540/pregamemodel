@@ -82,8 +82,8 @@ def prev_day_link(page):
 	return page.find('a', {'class' : 'button2 prev'})['href']	
 
 
-def get_box_links(stop_date='/boxes/?year=2018&month=3&day=28'):	
-	start_date = '/boxes/?year=2018&month=5&day=17'
+def get_box_links(stop_date='/boxes/?year=2019&month=3&day=28'):	
+	start_date = '/boxes/?year=2019&month=5&day=17'
 	
 	page = of.page(m.url + start_date) 
 	prev_day = prev_day_link(page)
@@ -182,29 +182,20 @@ def box_meta(url='/boxes/ANA/ANA200704020.shtml'):
 	other_meta = bs4_parse(cs[21])
 	new_umps = []
 	try:
-		strong = div.strong.text
+		strong = other_meta.strong.text
 		if strong == 'Umpires:':
-			new_umps += parse_other_info(other_meta)
+			params += parse_other_info(other_meta)
+			return params
 	except AttributeError:
-			other_meta = bs4_parse(cs[22])
-
+		pass
+	
+	# other_meta = bs4_parse(cs[22])
 
 	# other metas len should be 5, 4 for the umps, 1 for the weather
-
 	# if we can't find the comment associated to other metadata
-	if other_meta'strong' is None:
-		for i in range(5):
-			params.append(None)
-		return params  
-
-	params += new_umps
-	params.append(weather)
-
-	for param in params:
-		if param is None:
-			param = 0
-
-	return params
+	for i in range(5):
+		params.append('0')
+	return params  
 
 
 def parse_other_info(other_meta):
@@ -246,7 +237,7 @@ def write_meta(url='/boxes/ANA/ANA200704020.shtml'):
 	
 	month = date_split[1]
 	year = date_split[3]
-	print(year)
+	# print(year)
 
 	folder = 'boxes/' + year + '/' + month + '/ '+ game_id + '/'
 	path = data_root + folder
@@ -264,7 +255,7 @@ def write_meta(url='/boxes/ANA/ANA200704020.shtml'):
 		for i, field in enumerate(list_type):
 			if field is None:
 				field = 'NaN'
-			file.write(field)
+			file.write(str(field))
 			if i == len(m.bb_ref_box_meta) - 1:
 				file.write('\n')
 			else:
