@@ -15,17 +15,28 @@ def get_table(page, table_id):  # given bs4 page and table id, finds table using
 def parse_table(table, split='th'):
 	tbody = table.tbody
 	rows = tbody.find_all('tr')
+	data_rows = [[] for i in range(len(r))]
 	for row in rows:
 
 		row_class = row.get('class')
+		
 		if row_class == 'spacer':
 			continue
 		
 		print(row.text)
-		things = row.find_all(split)
-		for thing in things:
-			print(thing.text)
 
+		row_data = []
+		
+		things = row.find_all(split)
+		
+		for thing in things:
+			row_data.append(thing)
+		
+			print(thing.text)
+	
+		data_rows.append(row_data)
+
+	return data_rows
 
 def write_table(table, fn, split='th'):
 	try:
@@ -71,8 +82,8 @@ def prev_day_link(page):
 	return page.find('a', {'class' : 'button2 prev'})['href']	
 
 
-def get_box_links(stop_date='/boxes/?year=2000&month=03&day=28'):	
-	start_date = '/boxes/?year=2019&month=05&day=17'
+def get_box_links(stop_date='/boxes/?year=2019&month=3&day=28'):	
+	start_date = '/boxes/?year=2019&month=5&day=17'
 	
 	page = of.page(m.url + start_date) 
 	prev_day = prev_day_link(page)
@@ -80,15 +91,25 @@ def get_box_links(stop_date='/boxes/?year=2000&month=03&day=28'):
 	box_links = []
 
 	while prev_day != stop_date:
-		# month_num = str.split(';')[1].split('&')[0].split('=')
-		# if month_num == 1 or month_num == 2 or month_num == 12:
-		# 	prev_day = 
+		date = prev_day.split('?')[1].split('&')  # eg /boxes/?year=2019&month=06&day=1 -> ['year=2019', 'month=06', 'day=1']
+		
+		year = date[0].split('=')[1]
+		prev_year = int(year) - 1
+		month = prev_day.split('?')[1].split('&')[0].split('=')[1]
+		
+		if month == '2':
+			prev_day = '/boxes/?year=' + prev_year + '&month=12&day=01'
+
 		links =  page.find_all('td' , {'class': 'right gamelink'})
+
 		box_links += [elt.a['href'] for elt in links]
-
 		page = of.page(m.url + prev_day)
+		try:
+			prev_day = prev_day_link(page)
+		except TypeError:
+			print('prev_day not found {}'.format(prev_day))
 
-		prev_day = prev_day_link(page)
+		print(prev_day)
 
 	return box_links
 
@@ -99,8 +120,8 @@ def write_boxscores(links):
 		b = box(link)[0]
 
 
-def box(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.shtml'):
-	p = of.page(url)
+def box(url='/boxes/ANA/ANA201905180.shtml'):
+	p = of.page(m.url + url)
 	cs = comments(p)
 	meta = box_meta(p)
 	t1_batting = cs[15]
@@ -112,10 +133,10 @@ def box(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.shtml'):
 		stats[i] = bs4.BeautifulSoup(stat, 'html.parser')
 
 
-def box_meta(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.shtml'):
-	game_id = url.split('/')[5].split('.')[0]
+def box_meta(url='/boxes/ANA/ANA201905180.shtml'):
+	game_id = url.split('/')[3].split('.')[0]
 
-	page = of.page(url)
+	page = of.page(m.url + url)
 	cs = comments(page)
 
 	params = [game_id]
@@ -160,11 +181,15 @@ def all_metas():
 	box_urls = get_box_links()
 
 	for url in box_urls:
-		write_meta()
+		write_meta(url)
 
 
-def write_meta(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.shtml'):
-	game_id = url.split('/')[5].split('.')[0]
+def write_meta(url='/boxes/TEX/TEX201905300.shtml'):
+
+	# todo, do i want to overwrite files?
+
+	game_id = url.split('/')[3].split('.')[0].replace(' ', '')
+	print(game_id)
 	data_root = '.' + m.data
 	params = box_meta(url)
 	date_split = params[1].split(' ')
@@ -174,11 +199,15 @@ def write_meta(url='https://www.baseball-reference.com/boxes/ANA/ANA201905180.sh
 
 	folder = 'boxes/' + year + '/' + month + '/ '+ game_id + '/'
 	path = data_root + folder
-	
-	os.makedirs(path)
+
+	try:
+		os.makedirs(path)
+	except FileExistsError:
+		print('file: {} exists'.format(game_id))
+		pass
 
 	fn = params[0] + '_meta.csv'
-	file = open(path + fn, 'w+')
+	file = open(path + fn, 'w')
 
 	for j, list_type in enumerate([m.bb_ref_box_meta, params]):
 		for i, field in enumerate(list_type):
@@ -276,7 +305,6 @@ def player_history(player_url='/players/c/cruzne02.shtml'):
 			data[i].append(get_table(page, ids[all_years.index(stat_type)]))
 
 	return data
-
 
 
 def url_to_player_id(player_url='/players/c/cruzne02.shtml'):
@@ -385,7 +413,8 @@ def pbp(boxscore_url):  # given boxscore url, returns pbp table as soup
 def bs4_parse(text):
 	return bs4.BeautifulSoup(text, 'html.parser')
 
-def parse_pbp(table, game_id, file):
+
+def parse_pbp(table, game_id):
 	tbody = table.tbody
 	rows = tbody.find_all('tr')
 	for row in rows:
