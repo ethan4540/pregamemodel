@@ -82,8 +82,8 @@ def prev_day_link(page):
 	return page.find('a', {'class' : 'button2 prev'})['href']	
 
 
-def get_box_links(stop_date='/boxes/?year=2019&month=3&day=28'):	
-	start_date = '/boxes/?year=2019&month=5&day=17'
+def get_box_links(stop_date='/boxes/?year=2018&month=3&day=28'):	
+	start_date = '/boxes/?year=2018&month=5&day=17'
 	
 	page = of.page(m.url + start_date) 
 	prev_day = prev_day_link(page)
@@ -96,7 +96,7 @@ def get_box_links(stop_date='/boxes/?year=2019&month=3&day=28'):
 		year = date[0].split('=')[1]
 		prev_year = int(year) - 1
 		month = prev_day.split('?')[1].split('&')[0].split('=')[1]
-		
+
 		if month == '2':
 			prev_day = '/boxes/?year=' + prev_year + '&month=12&day=01'
 
@@ -133,45 +133,95 @@ def box(url='/boxes/ANA/ANA201905180.shtml'):
 		stats[i] = bs4.BeautifulSoup(stat, 'html.parser')
 
 
-def box_meta(url='/boxes/ANA/ANA201905180.shtml'):
+def box_meta(url='/boxes/ANA/ANA200704020.shtml'):
 	game_id = url.split('/')[3].split('.')[0]
 
 	page = of.page(m.url + url)
 	cs = comments(page)
 
-	params = [game_id]
-	
+	# schema == [id, 'date', 'start_time', 'attendance', 'venue', 'game_duration', 'game_type'
+	params = [game_id] + [None for i in range(6)]
+
 	meta = page.find('div', {'class' : 'scorebox_meta'})
 	meta_divs = meta.find_all('div')
+
+	if meta_divs is None:
+		return
+
 	for i, div in enumerate(meta_divs):
-		
-		text = div.text.replace(',', '')
+
 		if i > 5:
 			break
-		elif i > 0 and  i <= 4:
-			
-			data = text.split(': ')[1]
-			params.append(data)
+		
+		split_c = div.text.split(': ')
+
+		if len(split_c) == 1:
+
+			data = div.text.replace(',', '')
+
+			if len(div.text.split(',')) == 3:
+				params[1] = data
+			elif len(div.text.split(',')) == 2:
+				params[6] = data
+		elif len(split_c) == 2:
+			if split_c[0] == 'Start Time':
+				params[2] = split_c[1]
+
+			elif split_c[0] == 'Attendance':
+				data = split_c[1].replace(',', '')
+				params[3] = data
+
+			elif split_c[0] == 'Venue':
+				params[4] = split_c[1]
+
+			elif split_c[0] == 'Game Duration':
+				params[5] = split_c[1]
 		else:
-			params.append(text)
+			return 
 
 	other_meta = bs4_parse(cs[21])
+	new_umps = []
+	try:
+		strong = div.strong.text
+		if strong == 'Umpires:':
+			new_umps += parse_other_info(other_meta)
+	except AttributeError:
+			other_meta = bs4_parse(cs[22])
 
+
+	# other metas len should be 5, 4 for the umps, 1 for the weather
+
+	# if we can't find the comment associated to other metadata
+	if other_meta'strong' is None:
+		for i in range(5):
+			params.append(None)
+		return params  
+
+	params += new_umps
+	params.append(weather)
+
+	for param in params:
+		if param is None:
+			param = 0
+
+	return params
+
+
+def parse_other_info(other_meta):
+	ret = []
 	divs = other_meta.find_all('div')
 
 	weather = divs[4].text.replace(',', '')
 	weather = weather.split(': ')[1]
 
 	umps = other_meta.div.div.text.split(', ')
-	new_umps = []
 
 	for i, elt in enumerate(umps):
-	     new_umps.append(elt.split(' - ')[1])
+		ump_name = elt.split(' - ')[1]
+		ret.append(ump_name)
 
-	params += new_umps
-	params.append(weather)
-
-	return params
+	ret.append(weather)
+	return ret
 
 
 def all_metas():
@@ -184,7 +234,7 @@ def all_metas():
 		write_meta(url)
 
 
-def write_meta(url='/boxes/TEX/TEX201905300.shtml'):
+def write_meta(url='/boxes/ANA/ANA200704020.shtml'):
 
 	# todo, do i want to overwrite files?
 
@@ -196,6 +246,7 @@ def write_meta(url='/boxes/TEX/TEX201905300.shtml'):
 	
 	month = date_split[1]
 	year = date_split[3]
+	print(year)
 
 	folder = 'boxes/' + year + '/' + month + '/ '+ game_id + '/'
 	path = data_root + folder
@@ -211,6 +262,8 @@ def write_meta(url='/boxes/TEX/TEX201905300.shtml'):
 
 	for j, list_type in enumerate([m.bb_ref_box_meta, params]):
 		for i, field in enumerate(list_type):
+			if field is None:
+				field = 'NaN'
 			file.write(field)
 			if i == len(m.bb_ref_box_meta) - 1:
 				file.write('\n')
