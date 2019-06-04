@@ -31,4 +31,4 @@ mlb_csv_columns = ['game_id', 'inning', 'score', 'outs', 'robs', 'pitch_count', 
 bb_ref_box_meta = ['id', 'date', 'start_time', 'attendance', 'venue', 'game_duration', 'game_type', 'ump_hp', 'ump_1b', 'ump_2b', 'ump_3b',
 					'start_weather']
 
-bb_ref_lineup = ['team_id', '1', '1pos' '2', '2pos' '3', '3pos' '4', '4pos',  '5', '5pos',  '6', '6pos',  '7', '7pos',  '8', '8pos',  '9', '9pos', '10', '10pos']
+bb_ref_lineup = ['team_id', '1', '1pos', '2', '2pos', '3', '3pos', '4', '4pos',  '5', '5pos',  '6', '6pos',  '7', '7pos',  '8', '8pos',  '9', '9pos', '10', '10pos']

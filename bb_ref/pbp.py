@@ -8,7 +8,7 @@ import openers as of
 
 
 def lineups():
-	urls = get_box_links(start_date='/boxes/?year=2018&month=7&day=19', stop_date='/boxes/?year=2015&month=3&day=28')
+	urls = get_box_links(start_date='/boxes/?year=2019&month=6&day=4', stop_date='/boxes/?year=2017&month=3&day=28')
 	for url in urls:
 		data = one_linup(url)
 
@@ -44,28 +44,31 @@ def one_lineup(url='/boxes/BAL/BAL201906020.shtml'):
 	moscow = [tables[1].caption.text]
 	for row in away_team_lineup:
 		data = row.find_all('td')
-		data2 = [data[1], data[2]]
+		data2 = [data[1].text, data[2].text]
 		berlin += data2
+
 	for row in home_team_lineup:
 		data_h = row.find_all('td')
-		data_h2 = [data_h[1], data_h[2]]
+		data_h2 = [data_h[1].text, data_h[2].text]
 		moscow += data_h2
 
 	for i, j in enumerate(m.bb_ref_lineup):
-		print(j)
-		file.write(j)
+		file.write(str(j))
+
 		if i == len(m.bb_ref_lineup) -1:
 			file.write('\n')
 		else:
 			file.write(',')
+
 	for i, j in enumerate(berlin):
-		file.write(j)
+		file.write(str(j))
 		if i == len(m.bb_ref_lineup) -1:
 			file.write('\n')
 		else:
 			file.write(',')
+
 	for i, j in enumerate(moscow):
-		file.write(j)
+		file.write(str(j))
 		if i == len(m.bb_ref_lineup) -1:
 			file.write('\n')
 		else:
