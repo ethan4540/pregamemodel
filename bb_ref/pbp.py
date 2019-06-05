@@ -8,11 +8,13 @@ import openers as of
 
 
 def main():  # years is list
-	urls = get_box_links(start_date='/boxes/?year=2019&month=6&day=4', stop_date='/boxes/?year=2017&month=3&day=28')
+	data_root = '.' + m.data
+
+	urls = get_box_links(start_date='/boxes/?year=2019&month=4&day=28', stop_date='/boxes/?year=2016&month=4&day=28')
 	for url in urls:
 		p = of.page(m.url + url)
 
-		month, year, game_id = path_info_from_page(p)
+		month, year, game_id = path_info_from_page(p, url)
 
 		folder = 'boxes/' + year + '/' + month + '/ '+ game_id + '/'
 		path = data_root + folder
@@ -23,11 +25,11 @@ def main():  # years is list
 			print('file: {} exists'.format(game_id))
 		pass
 
-		write_meta(p, game_id)
-		one_lineup(p, game_id)
+		write_meta(path, p=p, game_id=game_id)
+		one_lineup(path, p=p, game_id=game_id)
 
-def path_info_from_page(page):
-	header = p.strong.text.split(', ')
+def path_info_from_page(page, url):
+	header = page.strong.text.split(', ')
 	month = header[1].split(' ')[0]
 	year = header[2]
 	game_id = url.split('/')[3].split('.')[0]
@@ -39,13 +41,14 @@ def lineups():
 
 # change to take in page instead of url
 
-def one_lineup(p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK201903200'):
+def one_lineup(path, p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK201903200'):
 
 	cs = comments(p)
 	lineups = cs[25]
-
 	parsed = bs4_parse(lineups)
+
 	tables = parsed.find_all('table')
+
 	if tables is None:
 		return
 
@@ -54,21 +57,13 @@ def one_lineup(p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK2
 	away_team_lineup = tables[0].find_all('tr')
 	home_team_lineup = tables[1].find_all('tr')
 
-	header = p.strong.text.split(', ')
-	month = header[1].split(' ')[0]
-	year = header[2]
-
-	folder = 'boxes/' + year + '/' + month + '/' + game_id + '/'
-	path = '.' + m.data + folder
-
-
 	fn = game_id + '_team_lineups.csv'
 	file = open(path + fn, 'w')	
 
 
 	berlin = [tables[0].caption.text]
 	moscow = [tables[1].caption.text]
-	
+
 	for row in away_team_lineup:
 		data = row.find_all('td')
 		data2 = [data[1].text, data[2].text]
@@ -100,7 +95,7 @@ def one_lineup(p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK2
 			file.write('\n')
 		else:
 			file.write(',')	
-
+	print(fn)
 	file.close()
 
 
@@ -231,10 +226,8 @@ def box(url='/boxes/ANA/ANA201905180.shtml'):
 		stats[i] = bs4.BeautifulSoup(stat, 'html.parser')
 
 
-def box_meta(url='/boxes/ANA/ANA200704020.shtml'):
-	game_id = url.split('/')[3].split('.')[0]
-
-	page = of.page(m.url + url)
+def box_meta(page, game_id):
+	
 	cs = comments(page)
 
 	# schema == [id, 'date', 'start_time', 'attendance', 'venue', 'game_duration', 'game_type'
@@ -324,10 +317,12 @@ def all_metas():
 
 
 # taking in page and url 
-def write_meta(p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK201903200'):
+def write_meta(path, p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK201903200'):
 
 	fn = game_id + '_meta.csv'
 	file = open(path + fn, 'w')
+
+	params = box_meta(p, game_id)
 
 	for j, list_type in enumerate([m.bb_ref_box_meta, params]):
 		for i, field in enumerate(list_type):
@@ -338,7 +333,7 @@ def write_meta(p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK2
 				file.write('\n')
 			else:
 				file.write(',')
-
+	print(fn)
 	file.close()
 
 def batting_parse(bat_comment):
