@@ -7,22 +7,53 @@ import macros as m
 import openers as of
 
 
-def lineups():
+def main():  # years is list
 	urls = get_box_links(start_date='/boxes/?year=2019&month=6&day=4', stop_date='/boxes/?year=2017&month=3&day=28')
 	for url in urls:
-		data = one_linup(url)
+		p = of.page(m.url + url)
 
-def one_lineup(url='/boxes/BAL/BAL201906020.shtml'):
-	p = of.page(m.url + url)
+		month, year, game_id = path_info_from_page(p)
+
+		folder = 'boxes/' + year + '/' + month + '/ '+ game_id + '/'
+		path = data_root + folder
+
+		try:
+			os.makedirs(path)
+		except FileExistsError:
+			print('file: {} exists'.format(game_id))
+		pass
+
+		write_meta(p, game_id)
+		one_lineup(p, game_id)
+
+def path_info_from_page(page):
+	header = p.strong.text.split(', ')
+	month = header[1].split(' ')[0]
+	year = header[2]
+	game_id = url.split('/')[3].split('.')[0]
+	return month, year, game_id
+
+
+def lineups():  
+	pass
+
+# change to take in page instead of url
+
+def one_lineup(p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK201903200'):
+
 	cs = comments(p)
 	lineups = cs[25]
+
 	parsed = bs4_parse(lineups)
 	tables = parsed.find_all('table')
+	if tables is None:
+		return
+
 	rows = []
+
 	away_team_lineup = tables[0].find_all('tr')
 	home_team_lineup = tables[1].find_all('tr')
-	#return (away_team_lineup, home_team_lineup)
-	game_id = url.split('/')[3].split('.')[0].replace(' ', '')
+
 	header = p.strong.text.split(', ')
 	month = header[1].split(' ')[0]
 	year = header[2]
@@ -30,11 +61,6 @@ def one_lineup(url='/boxes/BAL/BAL201906020.shtml'):
 	folder = 'boxes/' + year + '/' + month + '/' + game_id + '/'
 	path = '.' + m.data + folder
 
-	try:
-		os.makedirs(path)
-	except FileExistsError:
-		print('file: {} exists'.format(game_id))
-		pass
 
 	fn = game_id + '_team_lineups.csv'
 	file = open(path + fn, 'w')	
@@ -42,6 +68,7 @@ def one_lineup(url='/boxes/BAL/BAL201906020.shtml'):
 
 	berlin = [tables[0].caption.text]
 	moscow = [tables[1].caption.text]
+	
 	for row in away_team_lineup:
 		data = row.find_all('td')
 		data2 = [data[1].text, data[2].text]
@@ -76,6 +103,7 @@ def one_lineup(url='/boxes/BAL/BAL201906020.shtml'):
 
 	file.close()
 
+
 def get_table(page, table_id):  # given bs4 page and table id, finds table using bs4. returns tbody
 	table = page.find('table', {'id': table_id})
 	return table
@@ -106,6 +134,7 @@ def parse_table(table, split='th'):
 		data_rows.append(row_data)
 
 	return data_rows
+
 
 def write_table(table, fn, split='th'):
 	try:
@@ -294,32 +323,10 @@ def all_metas():
 		write_meta(url)
 
 
-def write_meta(url='/boxes/ANA/ANA200704020.shtml'):
+# taking in page and url 
+def write_meta(p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK201903200'):
 
-	# todo, do i want to overwrite files?
-	try:
-		game_id = url.split('/')[3].split('.')[0].replace(' ', '')
-	except IndexError:
-		return
-	print(game_id)
-	data_root = '.' + m.data
-	params = box_meta(url)
-	date_split = params[1].split(' ')
-	
-	month = date_split[1]
-	year = date_split[3]
-	# print(year)
-
-	folder = 'boxes/' + year + '/' + month + '/ '+ game_id + '/'
-	path = data_root + folder
-
-	try:
-		os.makedirs(path)
-	except FileExistsError:
-		print('file: {} exists'.format(game_id))
-		pass
-
-	fn = params[0] + '_meta.csv'
+	fn = game_id + '_meta.csv'
 	file = open(path + fn, 'w')
 
 	for j, list_type in enumerate([m.bb_ref_box_meta, params]):
@@ -557,17 +564,6 @@ def all_games():
 	return games
 
 
-def main():  # years is list
-	file = open('./data/mlb3.csv', 'a+')
-	game_links = all_games()
-	all_pbp = []
-	for i, game in enumerate(game_links):
-		game_pbp = pbp(m.url + game)
-		if game_pbp is None:
-			continue
-		parse_pbp(game_pbp, game, file)
-
-	file.close()
 
 
 def test_parse(url='https://www.baseball-reference.com/boxes/OAK/OAK201903200.shtml'):
