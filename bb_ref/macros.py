@@ -32,3 +32,5 @@ bb_ref_box_meta = ['id', 'date', 'start_time', 'attendance', 'venue', 'game_dura
 					'start_weather']
 
 bb_ref_lineup = ['team_id', '1', '1pos', '2', '2pos', '3', '3pos', '4', '4pos',  '5', '5pos',  '6', '6pos',  '7', '7pos',  '8', '8pos',  '9', '9pos', '10', '10pos']
+
+bb_ref_pbp = ['game_id', 'inn', 'score', 'out', 'rob', 'pitches', 'pitch_text', 'r_o', 'at_bat', 'batter', 'pitcher', 'wwpa', 'wwe', 'play_text']

@@ -10,7 +10,7 @@ import openers as of
 def main():  # years is list
 	data_root = '.' + m.data
 
-	urls = get_box_links(start_date='/boxes/?year=2016&month=04&day=28', stop_date='/boxes/?year=2014&month=4&day=28')
+	urls = get_box_links(start_date='/boxes/?year=2014&month=05&day=28', stop_date='/boxes/?year=2014&month=4&day=28')
 	for url in urls:
 		p = of.page(m.url + url)
 
@@ -31,6 +31,7 @@ def main():  # years is list
 		write_meta(path, p=p, game_id=game_id)
 		one_lineup(path, p=p, game_id=game_id)
 		pbp(path, p=p, game_id=game_id)
+
 
 def one_lineup_caller(url='/boxes/ARI/ARI201506030.shtml'):
 	data_root = '.' + m.data
@@ -111,21 +112,21 @@ def one_lineup(path, p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id
 	for i, j in enumerate(m.bb_ref_lineup):
 		file.write(str(j))
 
-		if i == len(m.bb_ref_lineup) -1:
+		if i == len(m.bb_ref_lineup) - 1:
 			file.write('\n')
 		else:
 			file.write(',')
 
 	for i, j in enumerate(berlin):
 		file.write(str(j))
-		if i == len(m.bb_ref_lineup) -1:
+		if i == len(berlin) - 1:
 			file.write('\n')
 		else:
 			file.write(',')
 
 	for i, j in enumerate(moscow):
 		file.write(str(j))
-		if i == len(m.bb_ref_lineup) -1:
+		if i == len(moscow) - 1:
 			file.write('\n')
 		else:
 			file.write(',')	
@@ -561,12 +562,32 @@ def pbp(path, p, game_id):  # given boxscore url, returns pbp table as soup
 	# page = of.page(boxscore_url)
 
 	comment_list = comments(p)
-	pbp_raw = bs4.BeautifulSoup(comment_list[31], 'html.parser')
+	split_path = path.split('/')
+	year = split_path[3]
+
+	if int(year) < 2018:
+		pbp_c = comment_list[32]
+	else:
+		pbp_c = comment_list[31]
+
+	pbp_raw = bs4.BeautifulSoup(pbp_c, 'html.parser')
+
 	pbp = get_table(pbp_raw, 'play_by_play')
 	if pbp is None:
+		print('incorrect pbp comment')
 		return
 	fn = game_id + '_pbp.csv'
 	file = open(path + fn, 'w')
+	
+	num_cols = len(m.bb_ref_pbp)
+
+	for i, col in enumerate(m.bb_ref_pbp):
+		file.write(col)
+		if i == num_cols - 1:
+			file.write('\n')
+		else:
+			file.write(',')
+
 	tbody = pbp.tbody
 	rows = tbody.find_all('tr')
 	for row in rows:
@@ -584,6 +605,7 @@ def pbp(path, p, game_id):  # given boxscore url, returns pbp table as soup
 				file.write('\n')
 			else:
 				file.write(',')
+	print(fn)
 	file.close()
 
 def all_games():
