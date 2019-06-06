@@ -26,11 +26,31 @@ def main():  # years is list
 			os.makedirs(path)
 		except FileExistsError:
 			print('file: {} exists'.format(game_id))
-		pass
+			pass
 
 		write_meta(path, p=p, game_id=game_id)
 		one_lineup(path, p=p, game_id=game_id)
 		pbp(path, p=p, game_id=game_id)
+
+def one_lineup_caller(url='/boxes/ARI/ARI201506030.shtml'):
+	data_root = '.' + m.data
+	p = of.page(m.url + url)
+
+	fn_data = path_info_from_page(p, url)
+	if fn_data is None:
+		return
+
+	month, year, game_id = fn_data
+	folder = 'boxes/' + year + '/' + month + '/ '+ game_id + '/'
+	path = data_root + folder
+
+	try:
+		os.makedirs(path)
+	except FileExistsError:
+		print('file: {} exists'.format(game_id))
+		pass
+
+	one_lineup(path, p=p, game_id=game_id)
 
 def path_info_from_page(page, url):
 	try:
@@ -51,12 +71,19 @@ def lineups():
 def one_lineup(path, p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK201903200'):
 
 	cs = comments(p)
-	lineups = cs[25]
+	lineup_path = path.split('/')
+	year = lineup_path[3]
+	if int(year) < 2018:
+		lineups = cs[26]
+	else:
+		lineups = cs[25]
+	
 	parsed = bs4_parse(lineups)
 
 	tables = parsed.find_all('table')
 
 	if len(tables) != 2:
+		print('wrong comment given for lineups')
 		return
 
 	rows = []
