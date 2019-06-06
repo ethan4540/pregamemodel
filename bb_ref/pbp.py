@@ -10,12 +10,15 @@ import openers as of
 def main():  # years is list
 	data_root = '.' + m.data
 
-	urls = get_box_links(start_date='/boxes/?year=2019&month=4&day=28', stop_date='/boxes/?year=2016&month=4&day=28')
+	urls = get_box_links(start_date='/boxes/?year=2016&month=04&day=28', stop_date='/boxes/?year=2014&month=4&day=28')
 	for url in urls:
 		p = of.page(m.url + url)
 
-		month, year, game_id = path_info_from_page(p, url)
+		fn_data = path_info_from_page(p, url)
+		if fn_data is None:
+			continue
 
+		month, year, game_id = fn_data
 		folder = 'boxes/' + year + '/' + month + '/ '+ game_id + '/'
 		path = data_root + folder
 
@@ -27,12 +30,16 @@ def main():  # years is list
 
 		write_meta(path, p=p, game_id=game_id)
 		one_lineup(path, p=p, game_id=game_id)
+		pbp(path, p=p, game_id=game_id)
 
 def path_info_from_page(page, url):
-	header = page.strong.text.split(', ')
-	month = header[1].split(' ')[0]
-	year = header[2]
-	game_id = url.split('/')[3].split('.')[0]
+	try:
+		header = page.strong.text.split(', ')
+		month = header[1].split(' ')[0]
+		year = header[2]
+		game_id = url.split('/')[3].split('.')[0]
+	except IndexError:
+		return None
 	return month, year, game_id
 
 
@@ -49,7 +56,7 @@ def one_lineup(path, p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id
 
 	tables = parsed.find_all('table')
 
-	if tables is None:
+	if len(tables) != 2:
 		return
 
 	rows = []
@@ -519,20 +526,21 @@ def comments(page):
 	return comments
 
 
-def pbp(boxscore_url):  # given boxscore url, returns pbp table as soup
-	page = of.page(boxscore_url)
-	comment_list = comments(page)
-	pbp_raw = bs4.BeautifulSoup(comment_list[31], 'html.parser')
-	pbp = get_table(pbp_raw, 'play_by_play')
-	return pbp
-
-
 def bs4_parse(text):
 	return bs4.BeautifulSoup(text, 'html.parser')
 
 
-def parse_pbp(table, game_id):
-	tbody = table.tbody
+def pbp(path, p, game_id):  # given boxscore url, returns pbp table as soup
+	# page = of.page(boxscore_url)
+
+	comment_list = comments(p)
+	pbp_raw = bs4.BeautifulSoup(comment_list[31], 'html.parser')
+	pbp = get_table(pbp_raw, 'play_by_play')
+	if pbp is None:
+		return
+	fn = game_id + '_pbp.csv'
+	file = open(path + fn, 'w')
+	tbody = pbp.tbody
 	rows = tbody.find_all('tr')
 	for row in rows:
 
@@ -544,21 +552,18 @@ def parse_pbp(table, game_id):
 		file.write(game_id + ',')
 
 		for num, item in enumerate(row):
-			print(item.text)
 			file.write(item.text)
 			if num == row_len - 1:
 				file.write('\n')
 			else:
 				file.write(',')
-
+	file.close()
 
 def all_games():
 	teams = team_links()
 	schedules = schedule_links(teams)
 	games = game_links(schedules)
 	return games
-
-
 
 
 def test_parse(url='https://www.baseball-reference.com/boxes/OAK/OAK201903200.shtml'):
