@@ -10,7 +10,7 @@ import openers as of
 def main():  # years is list
 	data_root = '.' + m.data
 
-	urls = get_box_links(start_date='/boxes/?year=2014&month=05&day=28', stop_date='/boxes/?year=2014&month=4&day=28')
+	urls = get_box_links(start_date='/boxes/?year=2019&month=05&day=28', stop_date='/boxes/?year=2017&month=4&day=28')
 	for url in urls:
 		p = of.page(m.url + url)
 
@@ -33,7 +33,7 @@ def main():  # years is list
 		pbp(path, p=p, game_id=game_id)
 
 
-def one_lineup_caller(url='/boxes/ARI/ARI201506030.shtml'):
+def one_lineup_caller(url='/boxes/ANA/ANA200006040.shtml'):
 	data_root = '.' + m.data
 	p = of.page(m.url + url)
 
@@ -68,7 +68,7 @@ def lineups():
 	pass
 
 # change to take in page instead of url
-
+# https://www.baseball-reference.com/boxes/ANA/ANA200006040.shtml
 def one_lineup(path, p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id='OAK201903200'):
 
 	cs = comments(p)
@@ -101,12 +101,14 @@ def one_lineup(path, p=of.page(m.url + '/boxes/OAK/OAK201903200.shtml'), game_id
 
 	for row in away_team_lineup:
 		data = row.find_all('td')
-		data2 = [data[1].text, data[2].text]
+		player_id = url_to_player_id(data[1].a['href'])
+		data2 = [player_id, data[2].text]
 		berlin += data2
 
 	for row in home_team_lineup:
 		data_h = row.find_all('td')
-		data_h2 = [data_h[1].text, data_h[2].text]
+		player_id = url_to_player_id(data_h[1].a['href'])
+		data_h2 = [player_id, data_h[2].text]
 		moscow += data_h2
 
 	for i, j in enumerate(m.bb_ref_lineup):
@@ -210,7 +212,7 @@ def prev_day_link(page):
 	return page.find('a', {'class' : 'button2 prev'})['href']	
 
 
-def get_box_links(start_date='/boxes/?year=2018&month=7&day=19', stop_date='/boxes/?year=2015&month=3&day=28'):	
+def get_box_links(start_date='/boxes/?year=2018&month=7&day=19', stop_date='/boxes/?year=2018&month=7&day=20'):	
 	
 	
 	page = of.page(m.url + start_date) 
@@ -223,10 +225,10 @@ def get_box_links(start_date='/boxes/?year=2018&month=7&day=19', stop_date='/box
 		
 		year = date[0].split('=')[1]
 		prev_year = int(year) - 1
-		month = prev_day.split('?')[1].split('&')[0].split('=')[1]
-
+		month = prev_day.split('?')[1].split('&')[1].split('=')[1]
+		# print(month)
 		if month == '2':
-			prev_day = '/boxes/?year=' + prev_year + '&month=12&day=01'
+			prev_day = '/boxes/?year=' + str(prev_year) + '&month=12&day=01'
 
 		links =  page.find_all('td' , {'class': 'right gamelink'})
 
